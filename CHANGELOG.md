@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2025-08-31
+
+### Breaking Changes
+- BREAKING: Replaced generic `anyhow::Result` with `TodoistResult<T>` for better error handling
+- BREAKING: All API methods now return specific `TodoistError` types instead of generic errors
+- BREAKING: Removed dependency on `anyhow` crate
 
 ### Added
 - Comprehensive error handling system with specific error types
@@ -14,14 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic error conversion from network and parsing errors
 - Helper functions for common error scenarios
 - Extensive error handling examples and documentation
-
-### Changed
-- BREAKING: Replaced generic `anyhow::Result` with `TodoistResult<T>` for better error handling
-- BREAKING: All API methods now return specific `TodoistError` types instead of generic errors
-- Improved error messages with detailed context and actionable information
-
-### Removed
-- BREAKING: Removed dependency on `anyhow` crate
 
 ### Error Handling
 - `TodoistError` enum with specific variants:
@@ -39,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retry information extraction from rate limiting responses
 - Status code access for HTTP-related errors
 - Comprehensive test coverage with 12+ test cases for all error scenarios
+
+## [Unreleased]
 
 ## [0.2.0] - 2025-08-16
 

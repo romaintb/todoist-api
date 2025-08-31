@@ -83,7 +83,6 @@ fn test_section_creation() {
         name: "Development".to_string(),
         project_id: "proj_123".to_string(),
         order: 1,
-        url: "https://todoist.com".to_string(),
     };
 
     assert_eq!(section.id, "section_123");

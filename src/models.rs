@@ -57,7 +57,6 @@ pub struct Section {
     pub name: String,
     pub project_id: String,
     pub order: i32,
-    pub url: String,
 }
 
 /// Todoist Comment model

@@ -13,7 +13,7 @@ A comprehensive Rust wrapper for the Todoist REST API v2, providing a clean and 
 - 🔍 **Advanced filtering** - Filter tasks, projects, and labels with pagination
 - 🔒 **Type safety** - Full Rust type safety with Serde serialization
 - 🛡️ **Error handling** - Comprehensive error handling with specific error types and rate limiting support
-- 📚 **Well documented** - Extensive documentation and examples
+- 📚 **Well documented** - Extensive documentation
 
 ## Installation
 
@@ -33,19 +33,19 @@ use todoist_api::TodoistWrapper;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a new Todoist client
     let todoist = TodoistWrapper::new("your-api-token".to_string());
-    
+
     // Get all tasks
     let tasks = todoist.get_tasks().await?;
     println!("Found {} tasks", tasks.len());
-    
+
     // Create a new task
     let new_task = todoist.create_simple_task("Buy groceries", None).await?;
     println!("Created task: {}", new_task.content);
-    
+
     // Complete a task
     todoist.complete_task(&new_task.id).await?;
     println!("Task completed!");
-    
+
     Ok(())
 }
 ```
@@ -60,7 +60,7 @@ use todoist_api::{TodoistWrapper, TodoistError, TodoistResult};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let todoist = TodoistWrapper::new("your-api-token".to_string());
-    
+
     match todoist.get_projects().await {
         Ok(projects) => println!("Found {} projects", projects.len()),
         Err(TodoistError::RateLimited { retry_after, message }) => {
@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => println!("Other error: {}", e),
     }
-    
+
     Ok(())
 }
 ```
@@ -127,18 +127,6 @@ async fn get_tasks_with_retry(todoist: &TodoistWrapper) -> TodoistResult<Vec<Tas
 - `ParseError` - Response parsing failures
 - `EmptyResponse` - Unexpected empty API responses
 - `Generic` - Other errors with optional status codes
-
-## Examples
-
-See the `examples/` directory for comprehensive usage examples:
-
-- `error_handling.rs` - Complete error handling examples including rate limiting, authentication, and retry strategies
-
-Run an example with:
-
-```bash
-cargo run --example error_handling
-```
 
 ## API Reference
 
@@ -448,7 +436,6 @@ The library includes a comprehensive test suite covering all functionality:
 
 - **Unit Tests**: 47 tests covering all models, argument types, and core functionality
 - **Integration Tests**: 10 tests for complete workflows (can be run with real API access)
-- ** Documentation Tests**: Ensures all examples compile and run correctly
 
 ### Running Tests
 

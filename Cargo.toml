@@ -1,6 +1,6 @@
 [package]
 name = "todoist-api"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "A Rust wrapper for the Todoist REST API v2"
 license = "MIT"
@@ -15,7 +15,6 @@ authors = ["Romain Bertrand <romain@doxin.net>"]
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-anyhow = "1.0"
 reqwest = { version = "0.11", features = ["json"] }
 
 [dev-dependencies]
@@ -38,3 +37,7 @@ path = "tests/wrapper_tests.rs"
 [[test]]
 name = "integration_tests"
 path = "tests/integration_tests.rs"
+
+[[test]]
+name = "error_handling_tests"
+path = "tests/error_handling_tests.rs"

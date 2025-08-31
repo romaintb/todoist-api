@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// Todoist Task model
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -257,4 +258,199 @@ pub struct CommentFilterArgs {
     pub project_id: Option<String>,
     pub limit: Option<i32>,
     pub cursor: Option<String>,
+}
+
+/// Represents different types of errors that can occur when interacting with the Todoist API
+#[derive(Debug, Clone)]
+pub enum TodoistError {
+    /// Rate limiting error (HTTP 429)
+    RateLimited { retry_after: Option<u64>, message: String },
+    /// Authentication error (HTTP 401)
+    AuthenticationError { message: String },
+    /// Authorization error (HTTP 403)
+    AuthorizationError { message: String },
+    /// Resource not found (HTTP 404)
+    NotFound {
+        resource_type: String,
+        resource_id: Option<String>,
+        message: String,
+    },
+    /// Validation error (HTTP 400)
+    ValidationError { field: Option<String>, message: String },
+    /// Server error (HTTP 5xx)
+    ServerError { status_code: u16, message: String },
+    /// Network/connection error
+    NetworkError { message: String },
+    /// JSON parsing error
+    ParseError { message: String },
+    /// Unexpected empty response (when API returns nothing)
+    EmptyResponse { endpoint: String, message: String },
+    /// Generic error for other cases
+    Generic { status_code: Option<u16>, message: String },
+}
+
+impl TodoistError {
+    /// Check if this is a rate limiting error
+    pub fn is_rate_limited(&self) -> bool {
+        matches!(self, TodoistError::RateLimited { .. })
+    }
+
+    /// Check if this is an authentication error
+    pub fn is_authentication_error(&self) -> bool {
+        matches!(self, TodoistError::AuthenticationError { .. })
+    }
+
+    /// Check if this is an authorization error
+    pub fn is_authorization_error(&self) -> bool {
+        matches!(self, TodoistError::AuthorizationError { .. })
+    }
+
+    /// Check if this is a not found error
+    pub fn is_not_found(&self) -> bool {
+        matches!(self, TodoistError::NotFound { .. })
+    }
+
+    /// Check if this is a validation error
+    pub fn is_validation_error(&self) -> bool {
+        matches!(self, TodoistError::ValidationError { .. })
+    }
+
+    /// Check if this is a server error
+    pub fn is_server_error(&self) -> bool {
+        matches!(self, TodoistError::ServerError { .. })
+    }
+
+    /// Check if this is a network error
+    pub fn is_network_error(&self) -> bool {
+        matches!(self, TodoistError::NetworkError { .. })
+    }
+
+    /// Check if this is an empty response error
+    pub fn is_empty_response(&self) -> bool {
+        matches!(self, TodoistError::EmptyResponse { .. })
+    }
+
+    /// Get the retry after value for rate limiting errors
+    pub fn retry_after(&self) -> Option<u64> {
+        match self {
+            TodoistError::RateLimited { retry_after, .. } => *retry_after,
+            _ => None,
+        }
+    }
+
+    /// Get the HTTP status code if available
+    pub fn status_code(&self) -> Option<u16> {
+        match self {
+            TodoistError::ServerError { status_code, .. } => Some(*status_code),
+            TodoistError::Generic { status_code, .. } => *status_code,
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for TodoistError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TodoistError::RateLimited { retry_after, message } => {
+                if let Some(seconds) = retry_after {
+                    write!(f, "Rate limited: {} (retry after {} seconds)", message, seconds)
+                } else {
+                    write!(f, "Rate limited: {}", message)
+                }
+            }
+            TodoistError::AuthenticationError { message } => {
+                write!(f, "Authentication error: {}", message)
+            }
+            TodoistError::AuthorizationError { message } => {
+                write!(f, "Authorization error: {}", message)
+            }
+            TodoistError::NotFound {
+                resource_type,
+                resource_id,
+                message,
+            } => {
+                if let Some(id) = resource_id {
+                    write!(f, "{} not found (ID: {}): {}", resource_type, id, message)
+                } else {
+                    write!(f, "{} not found: {}", resource_type, message)
+                }
+            }
+            TodoistError::ValidationError { field, message } => {
+                if let Some(field_name) = field {
+                    write!(f, "Validation error for field '{}': {}", field_name, message)
+                } else {
+                    write!(f, "Validation error: {}", message)
+                }
+            }
+            TodoistError::ServerError { status_code, message } => {
+                write!(f, "Server error ({}): {}", status_code, message)
+            }
+            TodoistError::NetworkError { message } => {
+                write!(f, "Network error: {}", message)
+            }
+            TodoistError::ParseError { message } => {
+                write!(f, "Parse error: {}", message)
+            }
+            TodoistError::EmptyResponse { endpoint, message } => {
+                write!(f, "Empty response from {}: {}", endpoint, message)
+            }
+            TodoistError::Generic { status_code, message } => {
+                if let Some(code) = status_code {
+                    write!(f, "Error ({}): {}", code, message)
+                } else {
+                    write!(f, "Error: {}", message)
+                }
+            }
+        }
+    }
+}
+
+impl std::error::Error for TodoistError {}
+
+impl From<reqwest::Error> for TodoistError {
+    fn from(err: reqwest::Error) -> Self {
+        TodoistError::NetworkError {
+            message: format!("Request failed: {}", err),
+        }
+    }
+}
+
+impl From<serde_json::Error> for TodoistError {
+    fn from(err: serde_json::Error) -> Self {
+        TodoistError::ParseError {
+            message: format!("JSON error: {}", err),
+        }
+    }
+}
+
+/// Result type for Todoist API operations
+pub type TodoistResult<T> = Result<T, TodoistError>;
+
+/// Helper function to create a rate limiting error
+pub fn rate_limited_error(message: impl Into<String>, retry_after: Option<u64>) -> TodoistError {
+    TodoistError::RateLimited {
+        retry_after,
+        message: message.into(),
+    }
+}
+
+/// Helper function to create an empty response error
+pub fn empty_response_error(endpoint: impl Into<String>, message: impl Into<String>) -> TodoistError {
+    TodoistError::EmptyResponse {
+        endpoint: endpoint.into(),
+        message: message.into(),
+    }
+}
+
+/// Helper function to create a not found error
+pub fn not_found_error(
+    resource_type: impl Into<String>,
+    resource_id: Option<impl Into<String>>,
+    message: impl Into<String>,
+) -> TodoistError {
+    TodoistError::NotFound {
+        resource_type: resource_type.into(),
+        resource_id: resource_id.map(|id| id.into()),
+        message: message.into(),
+    }
 }

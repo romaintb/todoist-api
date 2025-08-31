@@ -1,4 +1,3 @@
-use anyhow::Result;
 use reqwest::Client;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -25,24 +24,91 @@ impl TodoistWrapper {
         Self { client, api_token }
     }
 
+    /// Helper method to handle HTTP responses and convert them to TodoistResult
+    async fn handle_response<T>(&self, response: reqwest::Response, endpoint: &str) -> TodoistResult<T>
+    where
+        T: for<'de> serde::Deserialize<'de>,
+    {
+        let status = response.status();
+        let headers = response.headers().clone();
+
+        if status.is_success() {
+            // Check if response is empty
+            let text = response.text().await.map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to read response body: {}", e),
+            })?;
+
+            if text.trim().is_empty() {
+                return Err(empty_response_error(endpoint, "API returned empty response body"));
+            }
+
+            // Try to parse the response
+            serde_json::from_str::<T>(&text).map_err(|e| TodoistError::ParseError {
+                message: format!("Failed to parse response: {}", e),
+            })
+        } else {
+            // Handle different error status codes
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| format!("Unknown error occurred (HTTP {})", status));
+
+            let error = match status.as_u16() {
+                401 => TodoistError::AuthenticationError { message: error_text },
+                403 => TodoistError::AuthorizationError { message: error_text },
+                404 => TodoistError::NotFound {
+                    resource_type: "Resource".to_string(),
+                    resource_id: None,
+                    message: error_text,
+                },
+                429 => {
+                    let retry_after = headers
+                        .get("Retry-After")
+                        .and_then(|v| v.to_str().ok())
+                        .and_then(|s| s.parse::<u64>().ok());
+                    TodoistError::RateLimited {
+                        retry_after,
+                        message: error_text,
+                    }
+                }
+                400 => TodoistError::ValidationError {
+                    field: None,
+                    message: error_text,
+                },
+                500..=599 => TodoistError::ServerError {
+                    status_code: status.as_u16(),
+                    message: error_text,
+                },
+                _ => TodoistError::Generic {
+                    status_code: Some(status.as_u16()),
+                    message: error_text,
+                },
+            };
+
+            Err(error)
+        }
+    }
+
     // ===== PROJECT OPERATIONS =====
 
     /// Get all projects
-    pub async fn get_projects(&self) -> Result<Vec<Project>> {
+    pub async fn get_projects(&self) -> TodoistResult<Vec<Project>> {
         let url = format!("{TODOIST_API_BASE}/projects");
         let response = self
             .client
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let projects: Vec<Project> = response.json().await?;
-        Ok(projects)
+        self.handle_response(response, "/projects").await
     }
 
     /// Get projects with filtering and pagination
-    pub async fn get_projects_filtered(&self, args: &ProjectFilterArgs) -> Result<Vec<Project>> {
+    pub async fn get_projects_filtered(&self, args: &ProjectFilterArgs) -> TodoistResult<Vec<Project>> {
         let mut url = format!("{TODOIST_API_BASE}/projects");
         let mut query_params = Vec::new();
 
@@ -62,14 +128,16 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let projects: Vec<Project> = response.json().await?;
-        Ok(projects)
+        self.handle_response(response, "/projects").await
     }
 
     /// Get a specific project by ID
-    pub async fn get_project(&self, project_id: &str) -> Result<Project> {
+    pub async fn get_project(&self, project_id: &str) -> TodoistResult<Project> {
         let url = format!("{TODOIST_API_BASE}/projects/{project_id}");
         let response = self
             .client
@@ -83,7 +151,7 @@ impl TodoistWrapper {
     }
 
     /// Create a new project
-    pub async fn create_project(&self, args: &CreateProjectArgs) -> Result<Project> {
+    pub async fn create_project(&self, args: &CreateProjectArgs) -> TodoistResult<Project> {
         let url = format!("{TODOIST_API_BASE}/projects");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -115,7 +183,7 @@ impl TodoistWrapper {
     }
 
     /// Update an existing project
-    pub async fn update_project(&self, project_id: &str, args: &UpdateProjectArgs) -> Result<Project> {
+    pub async fn update_project(&self, project_id: &str, args: &UpdateProjectArgs) -> TodoistResult<Project> {
         let url = format!("{TODOIST_API_BASE}/projects/{project_id}");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -146,7 +214,7 @@ impl TodoistWrapper {
     }
 
     /// Delete a project
-    pub async fn delete_project(&self, project_id: &str) -> Result<()> {
+    pub async fn delete_project(&self, project_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/projects/{project_id}");
         self.client
             .delete(&url)
@@ -160,21 +228,23 @@ impl TodoistWrapper {
     // ===== TASK OPERATIONS =====
 
     /// Get all tasks
-    pub async fn get_tasks(&self) -> Result<Vec<Task>> {
+    pub async fn get_tasks(&self) -> TodoistResult<Vec<Task>> {
         let url = format!("{TODOIST_API_BASE}/tasks");
         let response = self
             .client
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let tasks: Vec<Task> = response.json().await?;
-        Ok(tasks)
+        self.handle_response(response, "/tasks").await
     }
 
     /// Get tasks for a specific project
-    pub async fn get_tasks_for_project(&self, project_id: &str) -> Result<Vec<Task>> {
+    pub async fn get_tasks_for_project(&self, project_id: &str) -> TodoistResult<Vec<Task>> {
         let url = format!("{TODOIST_API_BASE}/tasks?project_id={project_id}");
         let response = self
             .client
@@ -188,7 +258,7 @@ impl TodoistWrapper {
     }
 
     /// Get a specific task by ID
-    pub async fn get_task(&self, task_id: &str) -> Result<Task> {
+    pub async fn get_task(&self, task_id: &str) -> TodoistResult<Task> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}");
         let response = self
             .client
@@ -202,7 +272,7 @@ impl TodoistWrapper {
     }
 
     /// Get tasks by filter query
-    pub async fn get_tasks_by_filter(&self, args: &TaskFilterArgs) -> Result<Vec<Task>> {
+    pub async fn get_tasks_by_filter(&self, args: &TaskFilterArgs) -> TodoistResult<Vec<Task>> {
         let mut url = format!("{TODOIST_API_BASE}/tasks");
         let mut query_params = vec![format!("query={}", args.query)];
 
@@ -230,7 +300,7 @@ impl TodoistWrapper {
     }
 
     /// Create a new task
-    pub async fn create_task(&self, args: &CreateTaskArgs) -> Result<Task> {
+    pub async fn create_task(&self, args: &CreateTaskArgs) -> TodoistResult<Task> {
         let url = format!("{TODOIST_API_BASE}/tasks");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -298,7 +368,7 @@ impl TodoistWrapper {
     }
 
     /// Update an existing task
-    pub async fn update_task(&self, task_id: &str, args: &UpdateTaskArgs) -> Result<Task> {
+    pub async fn update_task(&self, task_id: &str, args: &UpdateTaskArgs) -> TodoistResult<Task> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -356,7 +426,7 @@ impl TodoistWrapper {
     }
 
     /// Complete a task
-    pub async fn complete_task(&self, task_id: &str) -> Result<()> {
+    pub async fn complete_task(&self, task_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}/close");
         self.client
             .post(&url)
@@ -368,7 +438,7 @@ impl TodoistWrapper {
     }
 
     /// Reopen a completed task
-    pub async fn reopen_task(&self, task_id: &str) -> Result<()> {
+    pub async fn reopen_task(&self, task_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}/reopen");
         self.client
             .post(&url)
@@ -380,7 +450,7 @@ impl TodoistWrapper {
     }
 
     /// Delete a task
-    pub async fn delete_task(&self, task_id: &str) -> Result<()> {
+    pub async fn delete_task(&self, task_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}");
         self.client
             .delete(&url)
@@ -394,7 +464,7 @@ impl TodoistWrapper {
     // ===== LABEL OPERATIONS =====
 
     /// Get all labels
-    pub async fn get_labels(&self) -> Result<Vec<Label>> {
+    pub async fn get_labels(&self) -> TodoistResult<Vec<Label>> {
         let url = format!("{TODOIST_API_BASE}/labels");
         let response = self
             .client
@@ -408,7 +478,7 @@ impl TodoistWrapper {
     }
 
     /// Get labels with filtering and pagination
-    pub async fn get_labels_filtered(&self, args: &LabelFilterArgs) -> Result<Vec<Label>> {
+    pub async fn get_labels_filtered(&self, args: &LabelFilterArgs) -> TodoistResult<Vec<Label>> {
         let mut url = format!("{TODOIST_API_BASE}/labels");
         let mut query_params = Vec::new();
 
@@ -435,7 +505,7 @@ impl TodoistWrapper {
     }
 
     /// Get a specific label by ID
-    pub async fn get_label(&self, label_id: &str) -> Result<Label> {
+    pub async fn get_label(&self, label_id: &str) -> TodoistResult<Label> {
         let url = format!("{TODOIST_API_BASE}/labels/{label_id}");
         let response = self
             .client
@@ -449,7 +519,7 @@ impl TodoistWrapper {
     }
 
     /// Create a new label
-    pub async fn create_label(&self, args: &CreateLabelArgs) -> Result<Label> {
+    pub async fn create_label(&self, args: &CreateLabelArgs) -> TodoistResult<Label> {
         let url = format!("{TODOIST_API_BASE}/labels");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -478,7 +548,7 @@ impl TodoistWrapper {
     }
 
     /// Update an existing label
-    pub async fn update_label(&self, label_id: &str, args: &UpdateLabelArgs) -> Result<Label> {
+    pub async fn update_label(&self, label_id: &str, args: &UpdateLabelArgs) -> TodoistResult<Label> {
         let url = format!("{TODOIST_API_BASE}/labels/{label_id}");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -509,7 +579,7 @@ impl TodoistWrapper {
     }
 
     /// Delete a label
-    pub async fn delete_label(&self, label_id: &str) -> Result<()> {
+    pub async fn delete_label(&self, label_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/labels/{label_id}");
         self.client
             .delete(&url)
@@ -523,7 +593,7 @@ impl TodoistWrapper {
     // ===== SECTION OPERATIONS =====
 
     /// Get all sections
-    pub async fn get_sections(&self) -> Result<Vec<Section>> {
+    pub async fn get_sections(&self) -> TodoistResult<Vec<Section>> {
         let url = format!("{TODOIST_API_BASE}/sections");
         let response = self
             .client
@@ -537,7 +607,7 @@ impl TodoistWrapper {
     }
 
     /// Get sections with filtering and pagination
-    pub async fn get_sections_filtered(&self, args: &SectionFilterArgs) -> Result<Vec<Section>> {
+    pub async fn get_sections_filtered(&self, args: &SectionFilterArgs) -> TodoistResult<Vec<Section>> {
         let mut url = format!("{TODOIST_API_BASE}/sections");
         let mut query_params = Vec::new();
 
@@ -567,7 +637,7 @@ impl TodoistWrapper {
     }
 
     /// Get a specific section by ID
-    pub async fn get_section(&self, section_id: &str) -> Result<Section> {
+    pub async fn get_section(&self, section_id: &str) -> TodoistResult<Section> {
         let url = format!("{TODOIST_API_BASE}/sections/{section_id}");
         let response = self
             .client
@@ -581,7 +651,7 @@ impl TodoistWrapper {
     }
 
     /// Create a new section
-    pub async fn create_section(&self, args: &CreateSectionArgs) -> Result<Section> {
+    pub async fn create_section(&self, args: &CreateSectionArgs) -> TodoistResult<Section> {
         let url = format!("{TODOIST_API_BASE}/sections");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -605,7 +675,7 @@ impl TodoistWrapper {
     }
 
     /// Update an existing section
-    pub async fn update_section(&self, section_id: &str, args: &UpdateSectionArgs) -> Result<Section> {
+    pub async fn update_section(&self, section_id: &str, args: &UpdateSectionArgs) -> TodoistResult<Section> {
         let url = format!("{TODOIST_API_BASE}/sections/{section_id}");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -625,7 +695,7 @@ impl TodoistWrapper {
     }
 
     /// Delete a section
-    pub async fn delete_section(&self, section_id: &str) -> Result<()> {
+    pub async fn delete_section(&self, section_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/sections/{section_id}");
         self.client
             .delete(&url)
@@ -639,7 +709,7 @@ impl TodoistWrapper {
     // ===== COMMENT OPERATIONS =====
 
     /// Get all comments
-    pub async fn get_comments(&self) -> Result<Vec<Comment>> {
+    pub async fn get_comments(&self) -> TodoistResult<Vec<Comment>> {
         let url = format!("{TODOIST_API_BASE}/comments");
         let response = self
             .client
@@ -653,7 +723,7 @@ impl TodoistWrapper {
     }
 
     /// Get comments with filtering and pagination
-    pub async fn get_comments_filtered(&self, args: &CommentFilterArgs) -> Result<Vec<Comment>> {
+    pub async fn get_comments_filtered(&self, args: &CommentFilterArgs) -> TodoistResult<Vec<Comment>> {
         let mut url = format!("{TODOIST_API_BASE}/comments");
         let mut query_params = Vec::new();
 
@@ -686,7 +756,7 @@ impl TodoistWrapper {
     }
 
     /// Get a specific comment by ID
-    pub async fn get_comment(&self, comment_id: &str) -> Result<Comment> {
+    pub async fn get_comment(&self, comment_id: &str) -> TodoistResult<Comment> {
         let url = format!("{TODOIST_API_BASE}/comments/{comment_id}");
         let response = self
             .client
@@ -700,7 +770,7 @@ impl TodoistWrapper {
     }
 
     /// Create a new comment
-    pub async fn create_comment(&self, args: &CreateCommentArgs) -> Result<Comment> {
+    pub async fn create_comment(&self, args: &CreateCommentArgs) -> TodoistResult<Comment> {
         let url = format!("{TODOIST_API_BASE}/comments");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -729,7 +799,7 @@ impl TodoistWrapper {
     }
 
     /// Update an existing comment
-    pub async fn update_comment(&self, comment_id: &str, args: &UpdateCommentArgs) -> Result<Comment> {
+    pub async fn update_comment(&self, comment_id: &str, args: &UpdateCommentArgs) -> TodoistResult<Comment> {
         let url = format!("{TODOIST_API_BASE}/comments/{comment_id}");
 
         let mut body: HashMap<String, Value> = HashMap::new();
@@ -749,7 +819,7 @@ impl TodoistWrapper {
     }
 
     /// Delete a comment
-    pub async fn delete_comment(&self, comment_id: &str) -> Result<()> {
+    pub async fn delete_comment(&self, comment_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/comments/{comment_id}");
         self.client
             .delete(&url)
@@ -763,7 +833,7 @@ impl TodoistWrapper {
     // ===== CONVENIENCE METHODS =====
 
     /// Create a simple task with just content
-    pub async fn create_simple_task(&self, content: &str, project_id: Option<&str>) -> Result<Task> {
+    pub async fn create_simple_task(&self, content: &str, project_id: Option<&str>) -> TodoistResult<Task> {
         let args = CreateTaskArgs {
             content: content.to_string(),
             description: None,
@@ -787,7 +857,7 @@ impl TodoistWrapper {
     }
 
     /// Update task content (backward compatibility)
-    pub async fn update_task_content(&self, task_id: &str, content: &str) -> Result<Task> {
+    pub async fn update_task_content(&self, task_id: &str, content: &str) -> TodoistResult<Task> {
         let args = UpdateTaskArgs {
             content: Some(content.to_string()),
             description: None,

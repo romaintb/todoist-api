@@ -12,8 +12,8 @@ A comprehensive Rust wrapper for the Todoist REST API v2, providing a clean and 
 - 💬 **Comment system** - Add and manage comments on tasks and projects
 - 🔍 **Advanced filtering** - Filter tasks, projects, and labels with pagination
 - 🔒 **Type safety** - Full Rust type safety with Serde serialization
-- 🛡️ **Error handling** - Comprehensive error handling with anyhow
-- 📚 **Well documented** - Extensive documentation and examples
+- 🛡️ **Error handling** - Comprehensive error handling with specific error types and rate limiting support
+- 📚 **Well documented** - Extensive documentation
 
 ## Installation
 
@@ -21,7 +21,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-todoist-api = "0.1.0"
+todoist-api = "0.3.0"
 ```
 
 ## Quick Start
@@ -33,22 +33,100 @@ use todoist_api::TodoistWrapper;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a new Todoist client
     let todoist = TodoistWrapper::new("your-api-token".to_string());
-    
+
     // Get all tasks
     let tasks = todoist.get_tasks().await?;
     println!("Found {} tasks", tasks.len());
-    
+
     // Create a new task
     let new_task = todoist.create_simple_task("Buy groceries", None).await?;
     println!("Created task: {}", new_task.content);
-    
+
     // Complete a task
     todoist.complete_task(&new_task.id).await?;
     println!("Task completed!");
-    
+
     Ok(())
 }
 ```
+
+## Error Handling
+
+The library provides comprehensive error handling with specific error types that allow you to handle different scenarios appropriately:
+
+```rust
+use todoist_api::{TodoistWrapper, TodoistError, TodoistResult};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let todoist = TodoistWrapper::new("your-api-token".to_string());
+
+    match todoist.get_projects().await {
+        Ok(projects) => println!("Found {} projects", projects.len()),
+        Err(TodoistError::RateLimited { retry_after, message }) => {
+            println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
+            // Handle rate limiting - wait and retry
+        }
+        Err(TodoistError::AuthenticationError { message }) => {
+            println!("Authentication failed: {}", message);
+            // Handle authentication issues
+        }
+        Err(TodoistError::NotFound { resource_type, resource_id, message }) => {
+            println!("Resource not found: {} (ID: {:?}) - {}", resource_type, resource_id, message);
+            // Handle missing resources
+        }
+        Err(TodoistError::EmptyResponse { endpoint, message }) => {
+            println!("Empty response from {}: {}", endpoint, message);
+            // Handle unexpected empty responses
+        }
+        Err(e) => println!("Other error: {}", e),
+    }
+
+    Ok(())
+}
+```
+
+### Rate Limiting
+
+The library automatically detects rate limiting (HTTP 429) and provides retry information:
+
+```rust
+// Handle rate limiting with automatic retry
+async fn get_tasks_with_retry(todoist: &TodoistWrapper) -> TodoistResult<Vec<Task>> {
+    let mut attempts = 0;
+    let max_attempts = 3;
+
+    loop {
+        attempts += 1;
+        let result = todoist.get_tasks().await;
+
+        match result {
+            Ok(tasks) => return Ok(tasks),
+            Err(TodoistError::RateLimited { retry_after, message }) if attempts < max_attempts => {
+                let delay = retry_after.unwrap_or(60);
+                println!("Rate limited (attempt {}/{}): {}. Waiting {} seconds...", 
+                        attempts, max_attempts, message, delay);
+                tokio::time::sleep(Duration::from_secs(delay)).await;
+                continue;
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
+```
+
+### Error Types
+
+- `RateLimited` - API rate limiting with retry information
+- `AuthenticationError` - Invalid or expired API token
+- `AuthorizationError` - Insufficient permissions
+- `NotFound` - Resource not found
+- `ValidationError` - Invalid request parameters
+- `ServerError` - Todoist server errors (5xx)
+- `NetworkError` - Network/connection issues
+- `ParseError` - Response parsing failures
+- `EmptyResponse` - Unexpected empty API responses
+- `Generic` - Other errors with optional status codes
 
 ## API Reference
 
@@ -302,16 +380,45 @@ For advanced querying and pagination:
 - `SectionFilterArgs` - Section filtering and pagination
 - `CommentFilterArgs` - Comment filtering and pagination
 
-## Error Handling
+## Advanced Error Handling
 
-All operations return `anyhow::Result<T>`, providing comprehensive error handling:
+All operations return `TodoistResult<T>` with specific error types for precise error handling:
 
 ```rust
+use todoist_api::{TodoistWrapper, TodoistError};
+
 match todoist.get_tasks().await {
     Ok(tasks) => println!("Found {} tasks", tasks.len()),
-    Err(e) => eprintln!("Error fetching tasks: {}", e),
+    Err(TodoistError::RateLimited { retry_after, message }) => {
+        println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
+        // Handle rate limiting - wait and retry
+    }
+    Err(TodoistError::AuthenticationError { message }) => {
+        eprintln!("Authentication failed: {}", message);
+        // Handle authentication issues
+    }
+    Err(TodoistError::EmptyResponse { endpoint, message }) => {
+        eprintln!("Empty response from {}: {}", endpoint, message);
+        // Handle unexpected empty responses
+    }
+    Err(e) => eprintln!("Other error: {}", e),
 }
 ```
+
+### Error Types
+
+The library provides specific error types for different scenarios:
+
+- `RateLimited` - API rate limiting with retry information
+- `AuthenticationError` - Invalid or expired API token
+- `AuthorizationError` - Insufficient permissions
+- `NotFound` - Resource not found
+- `ValidationError` - Invalid request parameters
+- `ServerError` - Todoist server errors (5xx)
+- `NetworkError` - Network/connection issues
+- `ParseError` - Response parsing failures
+- `EmptyResponse` - Unexpected empty API responses
+- `Generic` - Other errors with optional status codes
 
 ## Configuration
 
@@ -329,7 +436,6 @@ The library includes a comprehensive test suite covering all functionality:
 
 - **Unit Tests**: 47 tests covering all models, argument types, and core functionality
 - **Integration Tests**: 10 tests for complete workflows (can be run with real API access)
-- ** Documentation Tests**: Ensures all examples compile and run correctly
 
 ### Running Tests
 

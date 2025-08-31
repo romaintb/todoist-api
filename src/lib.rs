@@ -7,21 +7,30 @@
 //! - Async/await support
 //! - Full CRUD operations for tasks
 //! - Project and label management
-//! - Comprehensive error handling with anyhow
+//! - Comprehensive error handling with specific error types
+//! - Rate limiting detection and retry information
 //! - Serde serialization/deserialization
 //!
 //! ## Example
 //!
 //! ```rust,no_run
-//! use todoist_api::TodoistWrapper;
+//! use todoist_api::{TodoistWrapper, TodoistError, TodoistResult};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let todoist = TodoistWrapper::new("your-api-token".to_string());
 //!     
-//!     // Get all tasks
-//!     let tasks = todoist.get_tasks().await?;
-//!     println!("Found {} tasks", tasks.len());
+//!     // Get all tasks with error handling
+//!     match todoist.get_tasks().await {
+//!         Ok(tasks) => println!("Found {} tasks", tasks.len()),
+//!         Err(TodoistError::RateLimited { retry_after, message }) => {
+//!             println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
+//!         }
+//!         Err(TodoistError::AuthenticationError { message }) => {
+//!             println!("Authentication failed: {}", message);
+//!         }
+//!         Err(e) => println!("Other error: {}", e),
+//!     }
 //!     
 //!     // Create a new task
 //!     let new_task = todoist.create_simple_task("Buy groceries", None).await?;
@@ -38,7 +47,7 @@ pub use models::*;
 pub use wrapper::TodoistWrapper;
 
 // Re-export commonly used types
-pub use anyhow::Result;
+pub use models::{TodoistError, TodoistResult};
 
 #[cfg(test)]
 mod tests {
@@ -101,7 +110,7 @@ mod tests {
         let _wrapper: TodoistWrapper = TodoistWrapper::new("test".to_string());
 
         // Test that Result is properly exported
-        let _result: Result<()> = Ok(());
+        let _result: TodoistResult<()> = Ok(());
     }
 
     #[test]

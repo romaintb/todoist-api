@@ -117,77 +117,160 @@ pub struct Duration {
 #[derive(Debug, Serialize, Default)]
 pub struct CreateTaskArgs {
     pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub project_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub section_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub order: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub labels: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_string: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_datetime: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_lang: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_lang: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub assignee_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_unit: Option<String>,
 }
 
 /// Task update arguments
 #[derive(Debug, Serialize, Default)]
 pub struct UpdateTaskArgs {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub labels: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_string: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_datetime: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub due_lang: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_lang: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub assignee_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_unit: Option<String>,
+}
+
+impl UpdateTaskArgs {
+    /// Check if any fields are set for updating
+    pub fn has_updates(&self) -> bool {
+        self.content.is_some() ||
+        self.description.is_some() ||
+        self.priority.is_some() ||
+        self.labels.is_some() ||
+        self.due_string.is_some() ||
+        self.due_date.is_some() ||
+        self.due_datetime.is_some() ||
+        self.due_lang.is_some() ||
+        self.deadline_date.is_some() ||
+        self.deadline_lang.is_some() ||
+        self.assignee_id.is_some() ||
+        self.duration.is_some() ||
+        self.duration_unit.is_some()
+    }
 }
 
 /// Project creation arguments
 #[derive(Debug, Serialize, Default)]
 pub struct CreateProjectArgs {
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_favorite: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub view_style: Option<String>,
 }
 
 /// Project update arguments
 #[derive(Debug, Serialize, Default)]
 pub struct UpdateProjectArgs {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_favorite: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub view_style: Option<String>,
+}
+
+impl UpdateProjectArgs {
+    /// Check if any fields are set for updating
+    pub fn has_updates(&self) -> bool {
+        self.name.is_some() ||
+        self.color.is_some() ||
+        self.is_favorite.is_some() ||
+        self.view_style.is_some()
+    }
 }
 
 /// Label creation arguments
 #[derive(Debug, Serialize, Default)]
 pub struct CreateLabelArgs {
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub order: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_favorite: Option<bool>,
 }
 
 /// Label update arguments
 #[derive(Debug, Serialize, Default)]
 pub struct UpdateLabelArgs {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub order: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_favorite: Option<bool>,
+}
+
+impl UpdateLabelArgs {
+    /// Check if any fields are set for updating
+    pub fn has_updates(&self) -> bool {
+        self.name.is_some() ||
+        self.color.is_some() ||
+        self.order.is_some() ||
+        self.is_favorite.is_some()
+    }
 }
 
 /// Section creation arguments
@@ -195,6 +278,7 @@ pub struct UpdateLabelArgs {
 pub struct CreateSectionArgs {
     pub name: String,
     pub project_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub order: Option<i32>,
 }
 
@@ -208,8 +292,11 @@ pub struct UpdateSectionArgs {
 #[derive(Debug, Serialize, Default)]
 pub struct CreateCommentArgs {
     pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub task_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub project_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub attachment: Option<Attachment>,
 }
 
@@ -217,6 +304,14 @@ pub struct CreateCommentArgs {
 #[derive(Debug, Serialize, Default)]
 pub struct UpdateCommentArgs {
     pub content: String,
+}
+
+impl UpdateCommentArgs {
+    /// Check if any fields are set for updating
+    /// Note: UpdateCommentArgs only has required fields, so this always returns true when instantiated
+    pub fn has_updates(&self) -> bool {
+        !self.content.is_empty()
+    }
 }
 
 /// Task filter arguments

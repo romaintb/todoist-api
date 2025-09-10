@@ -1,6 +1,5 @@
 use reqwest::Client;
 use serde_json::Value;
-use std::collections::HashMap;
 
 use crate::models::*;
 
@@ -29,7 +28,7 @@ impl TodoistWrapper {
     where
         T: serde::de::DeserializeOwned,
     {
-        self.make_get_request_with_params(endpoint, &[]).await
+        self.make_get_request_with_params(endpoint, &[] as &[(&str, String)]).await
     }
 
     /// Helper method for making GET requests with query parameters
@@ -37,20 +36,13 @@ impl TodoistWrapper {
     where
         T: serde::de::DeserializeOwned,
     {
-        let mut url = format!("{TODOIST_API_BASE}{endpoint}");
-        if !query_params.is_empty() {
-            let query_string = query_params
-                .iter()
-                .map(|(k, v)| format!("{}={}", k, v))
-                .collect::<Vec<_>>()
-                .join("&");
-            url.push_str(&format!("?{query_string}"));
-        }
+        let url = format!("{TODOIST_API_BASE}{endpoint}");
 
         let response = self
             .client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_token))
+            .query(query_params)
+            .bearer_auth(&self.api_token)
             .send()
             .await
             .map_err(|e| TodoistError::NetworkError {
@@ -69,7 +61,7 @@ impl TodoistWrapper {
         let mut request = self
             .client
             .post(&url)
-            .header("Authorization", format!("Bearer {}", self.api_token))
+            .bearer_auth(&self.api_token)
             .header("Content-Type", "application/json");
 
         if let Some(body_value) = body {
@@ -92,7 +84,7 @@ impl TodoistWrapper {
         let response = self
             .client
             .delete(&url)
-            .header("Authorization", format!("Bearer {}", self.api_token))
+            .bearer_auth(&self.api_token)
             .send()
             .await
             .map_err(|e| TodoistError::NetworkError {
@@ -217,42 +209,19 @@ impl TodoistWrapper {
 
     /// Create a new project
     pub async fn create_project(&self, args: &CreateProjectArgs) -> TodoistResult<Project> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        body.insert("name".to_string(), serde_json::to_value(&args.name)?);
-        if let Some(color) = &args.color {
-            body.insert("color".to_string(), serde_json::to_value(color)?);
-        }
-        if let Some(parent_id) = &args.parent_id {
-            body.insert("parent_id".to_string(), serde_json::to_value(parent_id)?);
-        }
-        if let Some(is_favorite) = &args.is_favorite {
-            body.insert("is_favorite".to_string(), serde_json::to_value(is_favorite)?);
-        }
-        if let Some(view_style) = &args.view_style {
-            body.insert("view_style".to_string(), serde_json::to_value(view_style)?);
-        }
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request("/projects", Some(&body_value)).await
     }
 
     /// Update an existing project
     pub async fn update_project(&self, project_id: &str, args: &UpdateProjectArgs) -> TodoistResult<Project> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        if let Some(name) = &args.name {
-            body.insert("name".to_string(), serde_json::to_value(name)?);
+        if !args.has_updates() {
+            return Err(TodoistError::ValidationError {
+                field: None,
+                message: "No fields specified for update".to_string(),
+            });
         }
-        if let Some(color) = &args.color {
-            body.insert("color".to_string(), serde_json::to_value(color)?);
-        }
-        if let Some(is_favorite) = &args.is_favorite {
-            body.insert("is_favorite".to_string(), serde_json::to_value(is_favorite)?);
-        }
-        if let Some(view_style) = &args.view_style {
-            body.insert("view_style".to_string(), serde_json::to_value(view_style)?);
-        }
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request(&format!("/projects/{project_id}"), Some(&body_value))
             .await
     }
@@ -298,107 +267,19 @@ impl TodoistWrapper {
 
     /// Create a new task
     pub async fn create_task(&self, args: &CreateTaskArgs) -> TodoistResult<Task> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        body.insert("content".to_string(), serde_json::to_value(&args.content)?);
-        if let Some(description) = &args.description {
-            body.insert("description".to_string(), serde_json::to_value(description)?);
-        }
-        if let Some(project_id) = &args.project_id {
-            body.insert("project_id".to_string(), serde_json::to_value(project_id)?);
-        }
-        if let Some(section_id) = &args.section_id {
-            body.insert("section_id".to_string(), serde_json::to_value(section_id)?);
-        }
-        if let Some(parent_id) = &args.parent_id {
-            body.insert("parent_id".to_string(), serde_json::to_value(parent_id)?);
-        }
-        if let Some(order) = &args.order {
-            body.insert("order".to_string(), serde_json::to_value(order)?);
-        }
-        if let Some(priority) = &args.priority {
-            body.insert("priority".to_string(), serde_json::to_value(priority)?);
-        }
-        if let Some(labels) = &args.labels {
-            body.insert("labels".to_string(), serde_json::to_value(labels)?);
-        }
-        if let Some(due_string) = &args.due_string {
-            body.insert("due_string".to_string(), serde_json::to_value(due_string)?);
-        }
-        if let Some(due_date) = &args.due_date {
-            body.insert("due_date".to_string(), serde_json::to_value(due_date)?);
-        }
-        if let Some(due_datetime) = &args.due_datetime {
-            body.insert("due_datetime".to_string(), serde_json::to_value(due_datetime)?);
-        }
-        if let Some(due_lang) = &args.due_lang {
-            body.insert("due_lang".to_string(), serde_json::to_value(due_lang)?);
-        }
-        if let Some(deadline_date) = &args.deadline_date {
-            body.insert("deadline_date".to_string(), serde_json::to_value(deadline_date)?);
-        }
-        if let Some(deadline_lang) = &args.deadline_lang {
-            body.insert("deadline_lang".to_string(), serde_json::to_value(deadline_lang)?);
-        }
-        if let Some(assignee_id) = &args.assignee_id {
-            body.insert("assignee_id".to_string(), serde_json::to_value(assignee_id)?);
-        }
-        if let Some(duration) = &args.duration {
-            body.insert("duration".to_string(), serde_json::to_value(duration)?);
-        }
-        if let Some(duration_unit) = &args.duration_unit {
-            body.insert("duration_unit".to_string(), serde_json::to_value(duration_unit)?);
-        }
-
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request("/tasks", Some(&body_value)).await
     }
 
     /// Update an existing task
     pub async fn update_task(&self, task_id: &str, args: &UpdateTaskArgs) -> TodoistResult<Task> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        if let Some(content) = &args.content {
-            body.insert("content".to_string(), serde_json::to_value(content)?);
+        if !args.has_updates() {
+            return Err(TodoistError::ValidationError {
+                field: None,
+                message: "No fields specified for update".to_string(),
+            });
         }
-        if let Some(description) = &args.description {
-            body.insert("description".to_string(), serde_json::to_value(description)?);
-        }
-        if let Some(priority) = &args.priority {
-            body.insert("priority".to_string(), serde_json::to_value(priority)?);
-        }
-        if let Some(labels) = &args.labels {
-            body.insert("labels".to_string(), serde_json::to_value(labels)?);
-        }
-        if let Some(due_string) = &args.due_string {
-            body.insert("due_string".to_string(), serde_json::to_value(due_string)?);
-        }
-        if let Some(due_date) = &args.due_date {
-            body.insert("due_date".to_string(), serde_json::to_value(due_date)?);
-        }
-        if let Some(due_datetime) = &args.due_datetime {
-            body.insert("due_datetime".to_string(), serde_json::to_value(due_datetime)?);
-        }
-        if let Some(due_lang) = &args.due_lang {
-            body.insert("due_lang".to_string(), serde_json::to_value(due_lang)?);
-        }
-        if let Some(deadline_date) = &args.deadline_date {
-            body.insert("deadline_date".to_string(), serde_json::to_value(deadline_date)?);
-        }
-        if let Some(deadline_lang) = &args.deadline_lang {
-            body.insert("deadline_lang".to_string(), serde_json::to_value(deadline_lang)?);
-        }
-        if let Some(assignee_id) = &args.assignee_id {
-            body.insert("assignee_id".to_string(), serde_json::to_value(assignee_id)?);
-        }
-        if let Some(duration) = &args.duration {
-            body.insert("duration".to_string(), serde_json::to_value(duration)?);
-        }
-        if let Some(duration_unit) = &args.duration_unit {
-            body.insert("duration_unit".to_string(), serde_json::to_value(duration_unit)?);
-        }
-
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request(&format!("/tasks/{task_id}"), Some(&body_value))
             .await
     }
@@ -446,41 +327,19 @@ impl TodoistWrapper {
 
     /// Create a new label
     pub async fn create_label(&self, args: &CreateLabelArgs) -> TodoistResult<Label> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        body.insert("name".to_string(), serde_json::to_value(&args.name)?);
-        if let Some(color) = &args.color {
-            body.insert("color".to_string(), serde_json::to_value(color)?);
-        }
-        if let Some(order) = &args.order {
-            body.insert("order".to_string(), serde_json::to_value(order)?);
-        }
-        if let Some(is_favorite) = &args.is_favorite {
-            body.insert("is_favorite".to_string(), serde_json::to_value(is_favorite)?);
-        }
-
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request("/labels", Some(&body_value)).await
     }
 
     /// Update an existing label
     pub async fn update_label(&self, label_id: &str, args: &UpdateLabelArgs) -> TodoistResult<Label> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        if let Some(name) = &args.name {
-            body.insert("name".to_string(), serde_json::to_value(name)?);
+        if !args.has_updates() {
+            return Err(TodoistError::ValidationError {
+                field: None,
+                message: "No fields specified for update".to_string(),
+            });
         }
-        if let Some(color) = &args.color {
-            body.insert("color".to_string(), serde_json::to_value(color)?);
-        }
-        if let Some(order) = &args.order {
-            body.insert("order".to_string(), serde_json::to_value(order)?);
-        }
-        if let Some(is_favorite) = &args.is_favorite {
-            body.insert("is_favorite".to_string(), serde_json::to_value(is_favorite)?);
-        }
-
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request(&format!("/labels/{label_id}"), Some(&body_value))
             .await
     }
@@ -521,24 +380,13 @@ impl TodoistWrapper {
 
     /// Create a new section
     pub async fn create_section(&self, args: &CreateSectionArgs) -> TodoistResult<Section> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        body.insert("name".to_string(), serde_json::to_value(&args.name)?);
-        body.insert("project_id".to_string(), serde_json::to_value(&args.project_id)?);
-        if let Some(order) = &args.order {
-            body.insert("order".to_string(), serde_json::to_value(order)?);
-        }
-
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request("/sections", Some(&body_value)).await
     }
 
     /// Update an existing section
     pub async fn update_section(&self, section_id: &str, args: &UpdateSectionArgs) -> TodoistResult<Section> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        body.insert("name".to_string(), serde_json::to_value(&args.name)?);
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request(&format!("/sections/{section_id}"), Some(&body_value))
             .await
     }
@@ -582,29 +430,19 @@ impl TodoistWrapper {
 
     /// Create a new comment
     pub async fn create_comment(&self, args: &CreateCommentArgs) -> TodoistResult<Comment> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        body.insert("content".to_string(), serde_json::to_value(&args.content)?);
-        if let Some(task_id) = &args.task_id {
-            body.insert("task_id".to_string(), serde_json::to_value(task_id)?);
-        }
-        if let Some(project_id) = &args.project_id {
-            body.insert("project_id".to_string(), serde_json::to_value(project_id)?);
-        }
-        if let Some(attachment) = &args.attachment {
-            body.insert("attachment".to_string(), serde_json::to_value(attachment)?);
-        }
-
-        let body_value = serde_json::to_value(&body)?;
-
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request("/comments", Some(&body_value)).await
     }
 
     /// Update an existing comment
     pub async fn update_comment(&self, comment_id: &str, args: &UpdateCommentArgs) -> TodoistResult<Comment> {
-        let mut body: HashMap<String, Value> = HashMap::new();
-        body.insert("content".to_string(), serde_json::to_value(&args.content)?);
-        let body_value = serde_json::to_value(&body)?;
-
+        if !args.has_updates() {
+            return Err(TodoistError::ValidationError {
+                field: None,
+                message: "No fields specified for update".to_string(),
+            });
+        }
+        let body_value = serde_json::to_value(args)?;
         self.make_post_request(&format!("/comments/{comment_id}"), Some(&body_value))
             .await
     }

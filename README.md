@@ -97,6 +97,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 The library automatically detects rate limiting (HTTP 429) and provides retry information:
 
 ```rust
+use std::time::Duration;
+
 // Handle rate limiting with automatic retry
 async fn get_tasks_with_retry(todoist: &TodoistWrapper) -> TodoistResult<Vec<Task>> {
     let mut attempts = 0;

@@ -28,6 +28,7 @@ todoist-api = "0.3.0"
 
 ```rust
 use todoist_api::TodoistWrapper;
+use todoist_api::models::CreateTaskArgs;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -39,7 +40,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Found {} tasks", tasks.len());
 
     // Create a new task
-    let new_task = todoist.create_simple_task("Buy groceries", None).await?;
+    let args = CreateTaskArgs {
+        content: "Buy groceries".to_string(),
+        project_id: None,
+        ..Default::default()
+    };
+    let new_task = todoist.create_task(&args).await?;
     println!("Created task: {}", new_task.content);
 
     // Complete a task
@@ -91,6 +97,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 The library automatically detects rate limiting (HTTP 429) and provides retry information:
 
 ```rust
+use std::time::Duration;
+
 // Handle rate limiting with automatic retry
 async fn get_tasks_with_retry(todoist: &TodoistWrapper) -> TodoistResult<Vec<Task>> {
     let mut attempts = 0;
@@ -158,7 +166,12 @@ let filter_args = TaskFilterArgs {
 let filtered_tasks = todoist.get_tasks_by_filter(&filter_args).await?;
 
 // Create a simple task
-let task = todoist.create_simple_task("Task content", Some("project_id")).await?;
+let args = CreateTaskArgs {
+    content: "Task content".to_string(),
+    project_id: Some("project_id".to_string()),
+    ..Default::default()
+};
+let task = todoist.create_task(&args).await?;
 
 // Create a task with full options
 let create_args = CreateTaskArgs {

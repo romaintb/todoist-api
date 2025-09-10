@@ -25,7 +25,7 @@ impl TodoistWrapper {
     }
 
     /// Helper method to handle HTTP responses and convert them to TodoistResult
-    async fn handle_response<T>(&self, response: reqwest::Response, endpoint: &str) -> TodoistResult<T>
+    async fn handle_response<T>(&self, http_method: &str, endpoint: &str, response: reqwest::Response) -> TodoistResult<T>
     where
         T: for<'de> serde::Deserialize<'de>,
     {
@@ -33,16 +33,25 @@ impl TodoistWrapper {
         let headers = response.headers().clone();
 
         if status.is_success() {
-            // Check if response is empty
+            // Read response body
             let text = response.text().await.map_err(|e| TodoistError::NetworkError {
                 message: format!("Failed to read response body: {}", e),
             })?;
 
+            // For DELETE requests, empty responses are expected and valid
+            if http_method == "DELETE" && text.trim().is_empty() {
+                // For unit type (), return success
+                if std::any::type_name::<T>() == "()" {
+                    return Ok(serde_json::from_str::<T>("null").unwrap());
+                }
+            }
+
+            // Handle empty responses for non-DELETE methods
             if text.trim().is_empty() {
                 return Err(empty_response_error(endpoint, "API returned empty response body"));
             }
 
-            // Try to parse the response
+            // Try to parse response
             serde_json::from_str::<T>(&text).map_err(|e| TodoistError::ParseError {
                 message: format!("Failed to parse response: {}", e),
             })
@@ -104,7 +113,7 @@ impl TodoistWrapper {
                 message: format!("Failed to send request: {}", e),
             })?;
 
-        self.handle_response(response, "/projects").await
+        self.handle_response("GET", "/projects", response).await
     }
 
     /// Get projects with filtering and pagination
@@ -133,7 +142,7 @@ impl TodoistWrapper {
                 message: format!("Failed to send request: {}", e),
             })?;
 
-        self.handle_response(response, "/projects").await
+        self.handle_response("GET", "/projects", response).await
     }
 
     /// Get a specific project by ID
@@ -144,10 +153,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let project: Project = response.json().await?;
-        Ok(project)
+        self.handle_response("GET", "/projects/{id}", response).await
     }
 
     /// Create a new project
@@ -176,10 +187,12 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let project: Project = response.json().await?;
-        Ok(project)
+        self.handle_response("POST", "/projects", response).await
     }
 
     /// Update an existing project
@@ -207,22 +220,28 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let project: Project = response.json().await?;
-        Ok(project)
+        self.handle_response("POST", "/projects/{id}", response).await
     }
 
     /// Delete a project
     pub async fn delete_project(&self, project_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/projects/{project_id}");
-        self.client
+        let response = self
+            .client
             .delete(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        Ok(())
+        self.handle_response("DELETE", "/projects/{id}", response).await
     }
 
     // ===== TASK OPERATIONS =====
@@ -240,7 +259,7 @@ impl TodoistWrapper {
                 message: format!("Failed to send request: {}", e),
             })?;
 
-        self.handle_response(response, "/tasks").await
+        self.handle_response("GET", "/tasks", response).await
     }
 
     /// Get tasks for a specific project
@@ -251,10 +270,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let tasks: Vec<Task> = response.json().await?;
-        Ok(tasks)
+        self.handle_response("GET", "/tasks?project_id={id}", response).await
     }
 
     /// Get a specific task by ID
@@ -265,10 +286,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let task: Task = response.json().await?;
-        Ok(task)
+        self.handle_response("GET", "/tasks/{id}", response).await
     }
 
     /// Get tasks by filter query
@@ -293,10 +316,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let tasks: Vec<Task> = response.json().await?;
-        Ok(tasks)
+        self.handle_response("GET", "/tasks?filter", response).await
     }
 
     /// Create a new task
@@ -361,10 +386,12 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let task: Task = response.json().await?;
-        Ok(task)
+        self.handle_response("POST", "/tasks", response).await
     }
 
     /// Update an existing task
@@ -419,46 +446,60 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let task: Task = response.json().await?;
-        Ok(task)
+        self.handle_response("POST", "/tasks/{id}", response).await
     }
 
     /// Complete a task
     pub async fn complete_task(&self, task_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}/close");
-        self.client
+        let response = self
+            .client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        Ok(())
+        self.handle_response("POST", "/tasks/{id}/close", response).await
     }
 
     /// Reopen a completed task
     pub async fn reopen_task(&self, task_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}/reopen");
-        self.client
+        let response = self
+            .client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        Ok(())
+        self.handle_response("POST", "/tasks/{id}/reopen", response).await
     }
 
     /// Delete a task
     pub async fn delete_task(&self, task_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/tasks/{task_id}");
-        self.client
+        let response = self
+            .client
             .delete(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        Ok(())
+        self.handle_response("DELETE", "/tasks/{id}", response).await
     }
 
     // ===== LABEL OPERATIONS =====
@@ -471,10 +512,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let labels: Vec<Label> = response.json().await?;
-        Ok(labels)
+        self.handle_response("GET", "/labels", response).await
     }
 
     /// Get labels with filtering and pagination
@@ -498,10 +541,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let labels: Vec<Label> = response.json().await?;
-        Ok(labels)
+        self.handle_response("GET", "/labels", response).await
     }
 
     /// Get a specific label by ID
@@ -512,10 +557,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let label: Label = response.json().await?;
-        Ok(label)
+        self.handle_response("GET", "/labels/{id}", response).await
     }
 
     /// Create a new label
@@ -541,10 +588,12 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let label: Label = response.json().await?;
-        Ok(label)
+        self.handle_response("POST", "/labels", response).await
     }
 
     /// Update an existing label
@@ -572,22 +621,28 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let label: Label = response.json().await?;
-        Ok(label)
+        self.handle_response("POST", "/labels/{id}", response).await
     }
 
     /// Delete a label
     pub async fn delete_label(&self, label_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/labels/{label_id}");
-        self.client
+        let response = self
+            .client
             .delete(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        Ok(())
+        self.handle_response("DELETE", "/labels/{id}", response).await
     }
 
     // ===== SECTION OPERATIONS =====
@@ -600,10 +655,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let sections: Vec<Section> = response.json().await?;
-        Ok(sections)
+        self.handle_response("GET", "/sections", response).await
     }
 
     /// Get sections with filtering and pagination
@@ -630,10 +687,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let sections: Vec<Section> = response.json().await?;
-        Ok(sections)
+        self.handle_response("GET", "/sections", response).await
     }
 
     /// Get a specific section by ID
@@ -644,10 +703,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let section: Section = response.json().await?;
-        Ok(section)
+        self.handle_response("GET", "/sections/{id}", response).await
     }
 
     /// Create a new section
@@ -668,10 +729,12 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let section: Section = response.json().await?;
-        Ok(section)
+        self.handle_response("POST", "/sections", response).await
     }
 
     /// Update an existing section
@@ -688,22 +751,28 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let section: Section = response.json().await?;
-        Ok(section)
+        self.handle_response("POST", "/sections/{id}", response).await
     }
 
     /// Delete a section
     pub async fn delete_section(&self, section_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/sections/{section_id}");
-        self.client
+        let response = self
+            .client
             .delete(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        Ok(())
+        self.handle_response("DELETE", "/sections/{id}", response).await
     }
 
     // ===== COMMENT OPERATIONS =====
@@ -716,10 +785,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let comments: Vec<Comment> = response.json().await?;
-        Ok(comments)
+        self.handle_response("GET", "/comments", response).await
     }
 
     /// Get comments with filtering and pagination
@@ -749,10 +820,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let comments: Vec<Comment> = response.json().await?;
-        Ok(comments)
+        self.handle_response("GET", "/comments", response).await
     }
 
     /// Get a specific comment by ID
@@ -763,10 +836,12 @@ impl TodoistWrapper {
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let comment: Comment = response.json().await?;
-        Ok(comment)
+        self.handle_response("GET", "/comments/{id}", response).await
     }
 
     /// Create a new comment
@@ -792,10 +867,12 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let comment: Comment = response.json().await?;
-        Ok(comment)
+        self.handle_response("POST", "/comments", response).await
     }
 
     /// Update an existing comment
@@ -812,22 +889,28 @@ impl TodoistWrapper {
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        let comment: Comment = response.json().await?;
-        Ok(comment)
+        self.handle_response("POST", "/comments/{id}", response).await
     }
 
     /// Delete a comment
     pub async fn delete_comment(&self, comment_id: &str) -> TodoistResult<()> {
         let url = format!("{TODOIST_API_BASE}/comments/{comment_id}");
-        self.client
+        let response = self
+            .client
             .delete(&url)
             .header("Authorization", format!("Bearer {}", self.api_token))
             .send()
-            .await?;
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
 
-        Ok(())
+        self.handle_response("DELETE", "/comments/{id}", response).await
     }
 
     // ===== CONVENIENCE METHODS =====

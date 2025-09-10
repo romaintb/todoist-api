@@ -444,9 +444,9 @@ The library provides specific error types for different scenarios:
 
 The library uses sensible defaults:
 - 10-second timeout for HTTP requests
-- Automatic retry with fallback to default client
+- Fallback to default client if custom client creation fails
 - Bearer token authentication
-- Comprehensive error handling
+- Comprehensive error handling with rate limiting detection
 
 ## Testing
 
@@ -509,13 +509,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
-### 0.1.0
-- Initial release
-- Complete CRUD operations for all Todoist entities
-- Advanced filtering and pagination support
-- Comprehensive data models
-- Async/await support
-- Comprehensive error handling
+For detailed release notes and version history, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Roadmap
 

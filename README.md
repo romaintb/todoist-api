@@ -1,5 +1,12 @@
 # Todoist-api
 
+[![Crates.io Version](https://img.shields.io/crates/v/todoist-api.svg)](https://crates.io/crates/todoist-api)
+[![CI](https://github.com/romaintb/todoist-api/workflows/CI/badge.svg)](https://github.com/romaintb/todoist-api/actions)
+[![Documentation](https://docs.rs/todoist-api/badge.svg)](https://docs.rs/todoist-api)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Rust Version](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
+[![Todoist API](https://img.shields.io/badge/Todoist-API%20v2-red.svg)](https://developer.todoist.com/rest/v2)
+
 A comprehensive Rust wrapper for the Todoist REST API v2, providing a clean and ergonomic interface for managing tasks, projects, labels, sections, and comments.
 
 ## Features

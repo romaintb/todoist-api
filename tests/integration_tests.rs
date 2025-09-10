@@ -158,7 +158,7 @@ async fn test_error_handling() {
     // Test that invalid project IDs are handled gracefully
     // This would test the actual API error responses
     // For now, we'll just test the wrapper creation
-    assert!(true); // Placeholder assertion - we can't access private fields
+    // No assertion needed - if this function completes without panic, the test passes
 }
 
 #[tokio::test]
@@ -226,19 +226,23 @@ async fn test_data_model_consistency() {
 #[ignore]
 async fn test_argument_builder_patterns() {
     // Test common argument building patterns
-    let mut task_args = CreateTaskArgs::default();
-    task_args.content = "Built task".to_string();
-    task_args.priority = Some(4);
-    task_args.labels = Some(vec!["built".to_string(), "task".to_string()]);
+    let task_args = CreateTaskArgs {
+        content: "Built task".to_string(),
+        priority: Some(4),
+        labels: Some(vec!["built".to_string(), "task".to_string()]),
+        ..Default::default()
+    };
 
     assert_eq!(task_args.content, "Built task");
     assert_eq!(task_args.priority, Some(4));
     assert_eq!(task_args.labels, Some(vec!["built".to_string(), "task".to_string()]));
 
     // Test update pattern
-    let mut update_args = UpdateTaskArgs::default();
-    update_args.content = Some("Updated content".to_string());
-    update_args.priority = Some(1);
+    let update_args = UpdateTaskArgs {
+        content: Some("Updated content".to_string()),
+        priority: Some(1),
+        ..Default::default()
+    };
 
     assert_eq!(update_args.content, Some("Updated content".to_string()));
     assert_eq!(update_args.priority, Some(1));

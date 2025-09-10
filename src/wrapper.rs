@@ -28,7 +28,8 @@ impl TodoistWrapper {
     where
         T: serde::de::DeserializeOwned,
     {
-        self.make_get_request_with_params(endpoint, &[] as &[(&str, String)]).await
+        self.make_get_request_with_params(endpoint, &[] as &[(&str, String)])
+            .await
     }
 
     /// Helper method for making GET requests with query parameters

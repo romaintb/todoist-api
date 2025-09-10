@@ -64,7 +64,7 @@ mod tests {
         let _wrapper = TodoistWrapper::new("test-token".to_string());
         // Test that the wrapper was created successfully without panicking
         // We can't access private fields, so we just verify creation works
-        assert!(true); // Placeholder assertion
+        // No assertion needed - if this function completes without panic, the test passes
     }
 
     #[test]

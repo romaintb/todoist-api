@@ -185,19 +185,19 @@ pub struct UpdateTaskArgs {
 impl UpdateTaskArgs {
     /// Check if any fields are set for updating
     pub fn has_updates(&self) -> bool {
-        self.content.is_some() ||
-        self.description.is_some() ||
-        self.priority.is_some() ||
-        self.labels.is_some() ||
-        self.due_string.is_some() ||
-        self.due_date.is_some() ||
-        self.due_datetime.is_some() ||
-        self.due_lang.is_some() ||
-        self.deadline_date.is_some() ||
-        self.deadline_lang.is_some() ||
-        self.assignee_id.is_some() ||
-        self.duration.is_some() ||
-        self.duration_unit.is_some()
+        self.content.is_some()
+            || self.description.is_some()
+            || self.priority.is_some()
+            || self.labels.is_some()
+            || self.due_string.is_some()
+            || self.due_date.is_some()
+            || self.due_datetime.is_some()
+            || self.due_lang.is_some()
+            || self.deadline_date.is_some()
+            || self.deadline_lang.is_some()
+            || self.assignee_id.is_some()
+            || self.duration.is_some()
+            || self.duration_unit.is_some()
     }
 }
 
@@ -231,10 +231,7 @@ pub struct UpdateProjectArgs {
 impl UpdateProjectArgs {
     /// Check if any fields are set for updating
     pub fn has_updates(&self) -> bool {
-        self.name.is_some() ||
-        self.color.is_some() ||
-        self.is_favorite.is_some() ||
-        self.view_style.is_some()
+        self.name.is_some() || self.color.is_some() || self.is_favorite.is_some() || self.view_style.is_some()
     }
 }
 
@@ -266,10 +263,7 @@ pub struct UpdateLabelArgs {
 impl UpdateLabelArgs {
     /// Check if any fields are set for updating
     pub fn has_updates(&self) -> bool {
-        self.name.is_some() ||
-        self.color.is_some() ||
-        self.order.is_some() ||
-        self.is_favorite.is_some()
+        self.name.is_some() || self.color.is_some() || self.order.is_some() || self.is_favorite.is_some()
     }
 }
 

@@ -32,7 +32,7 @@ impl TodoistWrapper {
         response: reqwest::Response,
     ) -> TodoistResult<T>
     where
-        T: for<'de> serde::Deserialize<'de>,
+        T: serde::de::DeserializeOwned,
     {
         let status = response.status();
         let headers = response.headers().clone();
@@ -45,10 +45,10 @@ impl TodoistWrapper {
 
             // For DELETE requests, empty responses are expected and valid
             if http_method == "DELETE" && text.trim().is_empty() {
-                // For unit type (), return success
-                if std::any::type_name::<T>() == "()" {
-                    return Ok(serde_json::from_str::<T>("null").unwrap());
-                }
+                // Try to deserialize "null" for empty DELETE responses
+                return serde_json::from_str::<T>("null").map_err(|e| TodoistError::ParseError {
+                    message: format!("Failed to deserialize empty DELETE response: {}", e),
+                });
             }
 
             // Handle empty responses for non-DELETE methods

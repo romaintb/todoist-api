@@ -51,7 +51,15 @@ impl TodoistWrapper {
                 });
             }
 
-            // Handle empty responses for non-DELETE methods
+            // For POST requests to close/reopen tasks, empty responses or 204 are expected and valid
+            if http_method == "POST" && (status.as_u16() == 204 || text.trim().is_empty()) {
+                // Try to deserialize "null" for empty POST responses
+                return serde_json::from_str::<T>("null").map_err(|e| TodoistError::ParseError {
+                    message: format!("Failed to deserialize empty DELETE response: {}", e),
+                });
+            }
+
+            // Handle empty responses for other methods
             if text.trim().is_empty() {
                 return Err(empty_response_error(endpoint, "API returned empty response body"));
             }

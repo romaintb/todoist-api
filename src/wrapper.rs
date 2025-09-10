@@ -55,7 +55,7 @@ impl TodoistWrapper {
             if http_method == "POST" && (status.as_u16() == 204 || text.trim().is_empty()) {
                 // Try to deserialize "null" for empty POST responses
                 return serde_json::from_str::<T>("null").map_err(|e| TodoistError::ParseError {
-                    message: format!("Failed to deserialize empty DELETE response: {}", e),
+                    message: format!("Failed to deserialize empty POST response: {}", e),
                 });
             }
 

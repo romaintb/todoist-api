@@ -15,11 +15,12 @@
 //!
 //! ```rust,no_run
 //! use todoist_api::{TodoistWrapper, TodoistError, TodoistResult};
+//! use todoist_api::models::CreateTaskArgs;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let todoist = TodoistWrapper::new("your-api-token".to_string());
-//!     
+//!
 //!     // Get all tasks with error handling
 //!     match todoist.get_tasks().await {
 //!         Ok(tasks) => println!("Found {} tasks", tasks.len()),
@@ -31,11 +32,16 @@
 //!         }
 //!         Err(e) => println!("Other error: {}", e),
 //!     }
-//!     
+//!
 //!     // Create a new task
-//!     let new_task = todoist.create_simple_task("Buy groceries", None).await?;
+//!     let args = CreateTaskArgs {
+//!         content: "Buy groceries".to_string(),
+//!         project_id: None,
+//!         ..Default::default()
+//!     };
+//!     let new_task = todoist.create_task(&args).await?;
 //!     println!("Created task: {}", new_task.content);
-//!     
+//!
 //!     Ok(())
 //! }
 //! ```

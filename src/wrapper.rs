@@ -25,7 +25,12 @@ impl TodoistWrapper {
     }
 
     /// Helper method to handle HTTP responses and convert them to TodoistResult
-    async fn handle_response<T>(&self, http_method: &str, endpoint: &str, response: reqwest::Response) -> TodoistResult<T>
+    async fn handle_response<T>(
+        &self,
+        http_method: &str,
+        endpoint: &str,
+        response: reqwest::Response,
+    ) -> TodoistResult<T>
     where
         T: for<'de> serde::Deserialize<'de>,
     {

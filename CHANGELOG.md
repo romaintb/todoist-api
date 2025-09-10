@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2025-08-31
+## [0.3.0] - 2025-09-10
 
 ### Breaking Changes
 - BREAKING: Replaced generic `anyhow::Result` with `TodoistResult<T>` for better error handling
@@ -19,6 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic error conversion from network and parsing errors
 - Helper functions for common error scenarios
 - Extensive error handling examples and documentation
+- Abstracted HTTP methods (GET, POST, DELETE) to reduce code duplication
+- Enhanced README.md with project badges and improved documentation
+
+### Changed
+- Removed `url` field from `Section` model to simplify data structure
+- Refactored HTTP client methods for better maintainability
+- Improved error handling consistency across all endpoints
+- Better response handling for empty DELETE responses (HTTP 204)
+- Enhanced POST response handling for empty responses (HTTP 204)
+
+### Fixed
+- Fixed wrong error message wording in error handling
+- Fixed linting errors throughout the codebase
+- Improved code quality based on code review feedback
 
 ### Error Handling
 - `TodoistError` enum with specific variants:
@@ -38,9 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test coverage with 12+ test cases for all error scenarios
 
 ## [Unreleased]
-
-### Changed
-- Removed `url` field from `Section` model to simplify data structure
 
 ## [0.2.0] - 2025-08-16
 

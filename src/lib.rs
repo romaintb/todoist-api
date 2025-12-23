@@ -23,7 +23,7 @@
 //!
 //!     // Get all tasks with error handling
 //!     match todoist.get_tasks().await {
-//!         Ok(tasks) => println!("Found {} tasks", tasks.len()),
+//!         Ok(response) => println!("Found {} tasks", response.results.len()),
 //!         Err(TodoistError::RateLimited { retry_after, message }) => {
 //!             println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
 //!         }

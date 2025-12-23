@@ -241,7 +241,8 @@ impl TodoistWrapper {
 
     /// Get tasks for a specific project
     pub async fn get_tasks_for_project(&self, project_id: &str) -> TodoistResult<Vec<Task>> {
-        self.make_get_request(&format!("/tasks?project_id={project_id}")).await
+        let query_params = vec![("project_id", project_id.to_string())];
+        self.make_get_request_with_params("/tasks", &query_params).await
     }
 
     /// Get a specific task by ID

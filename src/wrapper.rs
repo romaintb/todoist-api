@@ -3,9 +3,9 @@ use serde_json::Value;
 
 use crate::models::*;
 
-const TODOIST_API_BASE: &str = "https://api.todoist.com/rest/v2";
+const TODOIST_API_BASE: &str = "https://api.todoist.com/api/v1";
 
-/// A comprehensive wrapper around the Todoist REST API v2
+/// A comprehensive wrapper around the Todoist Unified API v1
 #[derive(Clone)]
 pub struct TodoistWrapper {
     client: Client,
@@ -93,6 +93,32 @@ impl TodoistWrapper {
             })?;
 
         self.handle_response("DELETE", endpoint, response).await
+    }
+
+    /// Helper method for making GET requests that return paginated responses
+    /// This is used for API v1 list endpoints that return {results: [...], next_cursor: "..."}
+    async fn make_get_request_paginated<T>(
+        &self,
+        endpoint: &str,
+        query_params: &[(&str, String)],
+    ) -> TodoistResult<PaginatedResponse<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let url = format!("{TODOIST_API_BASE}{endpoint}");
+
+        let response = self
+            .client
+            .get(&url)
+            .query(query_params)
+            .bearer_auth(&self.api_token)
+            .send()
+            .await
+            .map_err(|e| TodoistError::NetworkError {
+                message: format!("Failed to send request: {}", e),
+            })?;
+
+        self.handle_response("GET", endpoint, response).await
     }
 
     /// Helper method to handle HTTP responses and convert them to TodoistResult
@@ -234,15 +260,15 @@ impl TodoistWrapper {
 
     // ===== TASK OPERATIONS =====
 
-    /// Get all tasks
-    pub async fn get_tasks(&self) -> TodoistResult<Vec<Task>> {
-        self.make_get_request("/tasks").await
+    /// Get all tasks (paginated)
+    pub async fn get_tasks(&self) -> TodoistResult<PaginatedResponse<Task>> {
+        self.make_get_request_paginated("/tasks", &[]).await
     }
 
-    /// Get tasks for a specific project
-    pub async fn get_tasks_for_project(&self, project_id: &str) -> TodoistResult<Vec<Task>> {
+    /// Get tasks for a specific project (paginated)
+    pub async fn get_tasks_for_project(&self, project_id: &str) -> TodoistResult<PaginatedResponse<Task>> {
         let query_params = vec![("project_id", project_id.to_string())];
-        self.make_get_request_with_params("/tasks", &query_params).await
+        self.make_get_request_paginated("/tasks", &query_params).await
     }
 
     /// Get a specific task by ID
@@ -250,8 +276,8 @@ impl TodoistWrapper {
         self.make_get_request(&format!("/tasks/{task_id}")).await
     }
 
-    /// Get tasks by filter query
-    pub async fn get_tasks_by_filter(&self, args: &TaskFilterArgs) -> TodoistResult<Vec<Task>> {
+    /// Get tasks by filter query (paginated)
+    pub async fn get_tasks_by_filter(&self, args: &TaskFilterArgs) -> TodoistResult<PaginatedResponse<Task>> {
         let mut query_params = vec![("query", args.query.clone())];
 
         if let Some(lang) = &args.lang {
@@ -264,7 +290,7 @@ impl TodoistWrapper {
             query_params.push(("cursor", cursor.clone()));
         }
 
-        self.make_get_request_with_params("/tasks", &query_params).await
+        self.make_get_request_paginated("/tasks", &query_params).await
     }
 
     /// Create a new task
@@ -299,6 +325,68 @@ impl TodoistWrapper {
     /// Delete a task
     pub async fn delete_task(&self, task_id: &str) -> TodoistResult<()> {
         self.make_delete_request(&format!("/tasks/{task_id}")).await
+    }
+
+    /// Get completed tasks by completion date (up to 3 months range)
+    /// Retrieves tasks completed within the specified date range
+    pub async fn get_completed_tasks_by_completion_date(
+        &self,
+        args: &CompletedTasksFilterArgs,
+    ) -> TodoistResult<PaginatedResponse<Task>> {
+        let mut query_params = Vec::new();
+
+        if let Some(since) = &args.since {
+            query_params.push(("since", since.clone()));
+        }
+        if let Some(until) = &args.until {
+            query_params.push(("until", until.clone()));
+        }
+        if let Some(project_id) = &args.project_id {
+            query_params.push(("project_id", project_id.clone()));
+        }
+        if let Some(section_id) = &args.section_id {
+            query_params.push(("section_id", section_id.clone()));
+        }
+        if let Some(limit) = args.limit {
+            query_params.push(("limit", limit.to_string()));
+        }
+        if let Some(cursor) = &args.cursor {
+            query_params.push(("cursor", cursor.clone()));
+        }
+
+        self.make_get_request_paginated("/tasks/completed/by_completion_date", &query_params)
+            .await
+    }
+
+    /// Get completed tasks by due date (up to 6 weeks range)
+    /// Retrieves tasks completed within the specified due date range
+    pub async fn get_completed_tasks_by_due_date(
+        &self,
+        args: &CompletedTasksFilterArgs,
+    ) -> TodoistResult<PaginatedResponse<Task>> {
+        let mut query_params = Vec::new();
+
+        if let Some(since) = &args.since {
+            query_params.push(("since", since.clone()));
+        }
+        if let Some(until) = &args.until {
+            query_params.push(("until", until.clone()));
+        }
+        if let Some(project_id) = &args.project_id {
+            query_params.push(("project_id", project_id.clone()));
+        }
+        if let Some(section_id) = &args.section_id {
+            query_params.push(("section_id", section_id.clone()));
+        }
+        if let Some(limit) = args.limit {
+            query_params.push(("limit", limit.to_string()));
+        }
+        if let Some(cursor) = &args.cursor {
+            query_params.push(("cursor", cursor.clone()));
+        }
+
+        self.make_get_request_paginated("/tasks/completed/by_due_date", &query_params)
+            .await
     }
 
     // ===== LABEL OPERATIONS =====
@@ -353,13 +441,13 @@ impl TodoistWrapper {
 
     // ===== SECTION OPERATIONS =====
 
-    /// Get all sections
-    pub async fn get_sections(&self) -> TodoistResult<Vec<Section>> {
-        self.make_get_request("/sections").await
+    /// Get all sections (paginated)
+    pub async fn get_sections(&self) -> TodoistResult<PaginatedResponse<Section>> {
+        self.make_get_request_paginated("/sections", &[]).await
     }
 
     /// Get sections with filtering and pagination
-    pub async fn get_sections_filtered(&self, args: &SectionFilterArgs) -> TodoistResult<Vec<Section>> {
+    pub async fn get_sections_filtered(&self, args: &SectionFilterArgs) -> TodoistResult<PaginatedResponse<Section>> {
         let mut query_params = Vec::new();
 
         if let Some(project_id) = &args.project_id {
@@ -372,7 +460,7 @@ impl TodoistWrapper {
             query_params.push(("cursor", cursor.clone()));
         }
 
-        self.make_get_request_with_params("/sections", &query_params).await
+        self.make_get_request_paginated("/sections", &query_params).await
     }
 
     /// Get a specific section by ID

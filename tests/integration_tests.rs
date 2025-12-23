@@ -187,22 +187,30 @@ async fn test_data_model_consistency() {
     // Test that our data models are consistent with the API
     let task = Task {
         id: "test_id".to_string(),
+        user_id: "user_test".to_string(),
         content: "Test content".to_string(),
         description: "Test description".to_string(),
         project_id: "test_project".to_string(),
         section_id: None,
         parent_id: None,
-        order: 1,
-        priority: 2,
-        is_completed: false,
+        added_by_uid: None,
+        assigned_by_uid: None,
+        responsible_uid: None,
         labels: vec!["test".to_string()],
-        created_at: "2024-01-01T00:00:00Z".to_string(),
-        due: None,
         deadline: None,
         duration: None,
-        assignee_id: None,
-        url: "https://todoist.com".to_string(),
-        comment_count: 0,
+        checked: false,
+        is_deleted: false,
+        added_at: "2024-01-01T00:00:00Z".to_string(),
+        completed_at: None,
+        updated_at: None,
+        due: None,
+        priority: 2,
+        child_order: 0,
+        order: 1,
+        note_count: 0,
+        day_order: 0,
+        is_collapsed: false,
     };
 
     // Test that all required fields are present
@@ -210,8 +218,8 @@ async fn test_data_model_consistency() {
     assert!(!task.content.is_empty());
     assert!(!task.description.is_empty());
     assert!(!task.project_id.is_empty());
-    assert!(!task.created_at.is_empty());
-    assert!(!task.url.is_empty());
+    assert!(!task.added_at.is_empty());
+    assert!(!task.user_id.is_empty());
 
     // Test that optional fields can be None
     assert!(task.section_id.is_none());
@@ -219,7 +227,7 @@ async fn test_data_model_consistency() {
     assert!(task.due.is_none());
     assert!(task.deadline.is_none());
     assert!(task.duration.is_none());
-    assert!(task.assignee_id.is_none());
+    assert!(task.added_by_uid.is_none());
 }
 
 #[tokio::test]

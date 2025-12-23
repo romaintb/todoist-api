@@ -1,26 +1,34 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Todoist Task model
+/// Todoist Task model (API v1)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Task {
     pub id: String,
+    pub user_id: String,
     pub content: String,
     pub description: String,
     pub project_id: String,
     pub section_id: Option<String>,
     pub parent_id: Option<String>,
-    pub order: i32,
-    pub priority: i32,
-    pub is_completed: bool,
+    pub added_by_uid: Option<String>,
+    pub assigned_by_uid: Option<String>,
+    pub responsible_uid: Option<String>,
     pub labels: Vec<String>,
-    pub created_at: String,
-    pub due: Option<Due>,
     pub deadline: Option<Deadline>,
     pub duration: Option<Duration>,
-    pub assignee_id: Option<String>,
-    pub url: String,
-    pub comment_count: i32,
+    pub checked: bool,
+    pub is_deleted: bool,
+    pub added_at: String,
+    pub completed_at: Option<String>,
+    pub updated_at: Option<String>,
+    pub due: Option<Due>,
+    pub priority: i32,
+    pub child_order: i32,
+    pub order: i32,
+    pub note_count: i32,
+    pub day_order: i32,
+    pub is_collapsed: bool,
 }
 
 /// Todoist Project model
@@ -50,13 +58,20 @@ pub struct Label {
     pub is_favorite: bool,
 }
 
-/// Todoist Section model
+/// Todoist Section model (API v1)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Section {
     pub id: String,
-    pub name: String,
+    pub user_id: String,
     pub project_id: String,
-    pub order: i32,
+    pub added_at: String,
+    pub updated_at: Option<String>,
+    pub archived_at: Option<String>,
+    pub name: String,
+    pub section_order: i32,
+    pub is_archived: bool,
+    pub is_deleted: bool,
+    pub is_collapsed: bool,
 }
 
 /// Todoist Comment model
@@ -113,6 +128,15 @@ pub struct Duration {
     pub unit: String, // "minute", "hour", "day"
 }
 
+/// Paginated response wrapper for API v1
+/// All list endpoints in API v1 return results in this format
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PaginatedResponse<T> {
+    pub results: Vec<T>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
+}
+
 /// Task creation arguments
 #[derive(Debug, Serialize, Default)]
 pub struct CreateTaskArgs {
@@ -144,8 +168,6 @@ pub struct CreateTaskArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_lang: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub assignee_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_unit: Option<String>,
@@ -175,8 +197,6 @@ pub struct UpdateTaskArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_lang: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub assignee_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_unit: Option<String>,
@@ -195,7 +215,6 @@ impl UpdateTaskArgs {
             || self.due_lang.is_some()
             || self.deadline_date.is_some()
             || self.deadline_lang.is_some()
-            || self.assignee_id.is_some()
             || self.duration.is_some()
             || self.duration_unit.is_some()
     }
@@ -345,6 +364,24 @@ pub struct CommentFilterArgs {
     pub task_id: Option<String>,
     pub project_id: Option<String>,
     pub limit: Option<i32>,
+    pub cursor: Option<String>,
+}
+
+/// Completed tasks filter arguments
+/// Used for querying completed tasks by completion date or due date
+#[derive(Debug, Serialize, Default)]
+pub struct CompletedTasksFilterArgs {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub section_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>, // ISO 8601 datetime
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub until: Option<String>, // ISO 8601 datetime
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
 }
 

@@ -4,22 +4,30 @@ use todoist_api::*;
 fn test_task_creation() {
     let task = Task {
         id: "123".to_string(),
+        user_id: "user123".to_string(),
         content: "Test task".to_string(),
         description: "Test description".to_string(),
         project_id: "proj_123".to_string(),
         section_id: None,
         parent_id: None,
-        order: 1,
-        priority: 3,
-        is_completed: false,
+        added_by_uid: None,
+        assigned_by_uid: None,
+        responsible_uid: None,
         labels: vec!["test".to_string(), "important".to_string()],
-        created_at: "2024-01-01T00:00:00Z".to_string(),
-        due: None,
         deadline: None,
         duration: None,
-        assignee_id: None,
-        url: "https://todoist.com".to_string(),
-        comment_count: 0,
+        checked: false,
+        is_deleted: false,
+        added_at: "2024-01-01T00:00:00Z".to_string(),
+        completed_at: None,
+        updated_at: None,
+        due: None,
+        priority: 3,
+        child_order: 0,
+        order: 1,
+        note_count: 0,
+        day_order: 0,
+        is_collapsed: false,
     };
 
     assert_eq!(task.id, "123");
@@ -27,7 +35,7 @@ fn test_task_creation() {
     assert_eq!(task.description, "Test description");
     assert_eq!(task.project_id, "proj_123");
     assert_eq!(task.priority, 3);
-    assert!(!task.is_completed);
+    assert!(!task.checked);
     assert_eq!(task.labels.len(), 2);
     assert!(task.labels.contains(&"test".to_string()));
     assert!(task.labels.contains(&"important".to_string()));
@@ -80,15 +88,22 @@ fn test_label_creation() {
 fn test_section_creation() {
     let section = Section {
         id: "section_123".to_string(),
-        name: "Development".to_string(),
+        user_id: "user123".to_string(),
         project_id: "proj_123".to_string(),
-        order: 1,
+        added_at: "2024-01-01T00:00:00Z".to_string(),
+        updated_at: None,
+        archived_at: None,
+        name: "Development".to_string(),
+        section_order: 1,
+        is_archived: false,
+        is_deleted: false,
+        is_collapsed: false,
     };
 
     assert_eq!(section.id, "section_123");
     assert_eq!(section.name, "Development");
     assert_eq!(section.project_id, "proj_123");
-    assert_eq!(section.order, 1);
+    assert_eq!(section.section_order, 1);
 }
 
 #[test]
@@ -198,7 +213,6 @@ fn test_create_task_args_default() {
     assert!(args.due_lang.is_none());
     assert!(args.deadline_date.is_none());
     assert!(args.deadline_lang.is_none());
-    assert!(args.assignee_id.is_none());
     assert!(args.duration.is_none());
     assert!(args.duration_unit.is_none());
 }
@@ -217,7 +231,6 @@ fn test_update_task_args_default() {
     assert!(args.due_lang.is_none());
     assert!(args.deadline_date.is_none());
     assert!(args.deadline_lang.is_none());
-    assert!(args.assignee_id.is_none());
     assert!(args.duration.is_none());
     assert!(args.duration_unit.is_none());
 }

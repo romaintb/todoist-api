@@ -210,9 +210,16 @@ impl TodoistWrapper {
 
     // ===== PROJECT OPERATIONS =====
 
-    /// Get all projects
-    pub async fn get_projects(&self) -> TodoistResult<Vec<Project>> {
-        self.make_get_request("/projects").await
+    /// Get all projects (paginated)
+    pub async fn get_projects(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Project>> {
+        let mut query_params = Vec::new();
+        if let Some(l) = limit {
+            query_params.push(("limit", l.to_string()));
+        }
+        if let Some(c) = cursor {
+            query_params.push(("cursor", c));
+        }
+        self.make_get_request_paginated("/projects", &query_params).await
     }
 
     /// Get projects with filtering and pagination
@@ -261,8 +268,15 @@ impl TodoistWrapper {
     // ===== TASK OPERATIONS =====
 
     /// Get all tasks (paginated)
-    pub async fn get_tasks(&self) -> TodoistResult<PaginatedResponse<Task>> {
-        self.make_get_request_paginated("/tasks", &[]).await
+    pub async fn get_tasks(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Task>> {
+        let mut query_params = Vec::new();
+        if let Some(l) = limit {
+            query_params.push(("limit", l.to_string()));
+        }
+        if let Some(c) = cursor {
+            query_params.push(("cursor", c));
+        }
+        self.make_get_request_paginated("/tasks", &query_params).await
     }
 
     /// Get tasks for a specific project (paginated)
@@ -391,9 +405,16 @@ impl TodoistWrapper {
 
     // ===== LABEL OPERATIONS =====
 
-    /// Get all labels
-    pub async fn get_labels(&self) -> TodoistResult<Vec<Label>> {
-        self.make_get_request("/labels").await
+    /// Get all labels (paginated)
+    pub async fn get_labels(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Label>> {
+        let mut query_params = Vec::new();
+        if let Some(l) = limit {
+            query_params.push(("limit", l.to_string()));
+        }
+        if let Some(c) = cursor {
+            query_params.push(("cursor", c));
+        }
+        self.make_get_request_paginated("/labels", &query_params).await
     }
 
     /// Get labels with filtering and pagination
@@ -442,8 +463,15 @@ impl TodoistWrapper {
     // ===== SECTION OPERATIONS =====
 
     /// Get all sections (paginated)
-    pub async fn get_sections(&self) -> TodoistResult<PaginatedResponse<Section>> {
-        self.make_get_request_paginated("/sections", &[]).await
+    pub async fn get_sections(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Section>> {
+        let mut query_params = Vec::new();
+        if let Some(l) = limit {
+            query_params.push(("limit", l.to_string()));
+        }
+        if let Some(c) = cursor {
+            query_params.push(("cursor", c));
+        }
+        self.make_get_request_paginated("/sections", &query_params).await
     }
 
     /// Get sections with filtering and pagination

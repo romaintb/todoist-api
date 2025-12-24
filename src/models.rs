@@ -25,7 +25,6 @@ pub struct Task {
     pub due: Option<Due>,
     pub priority: i32,
     pub child_order: i32,
-    pub order: i32,
     pub note_count: i32,
     pub day_order: i32,
     pub is_collapsed: bool,
@@ -36,15 +35,11 @@ pub struct Task {
 pub struct Project {
     pub id: String,
     pub name: String,
-    pub comment_count: i32,
-    pub order: i32,
     pub color: String,
     pub is_shared: bool,
     pub is_favorite: bool,
-    pub is_inbox_project: bool,
-    pub is_team_inbox: bool,
+    pub inbox_project: bool,
     pub view_style: String,
-    pub url: String,
     pub parent_id: Option<String>,
 }
 

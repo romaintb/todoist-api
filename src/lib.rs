@@ -101,15 +101,11 @@ mod tests {
         let _project: Project = Project {
             id: "test".to_string(),
             name: "test".to_string(),
-            comment_count: 0,
-            order: 1,
             color: "blue".to_string(),
             is_shared: false,
             is_favorite: false,
-            is_inbox_project: false,
-            is_team_inbox: false,
+            inbox_project: false,
             view_style: "list".to_string(),
-            url: "https://todoist.com".to_string(),
             parent_id: None,
         };
 

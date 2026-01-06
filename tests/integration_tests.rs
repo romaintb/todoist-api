@@ -207,7 +207,6 @@ async fn test_data_model_consistency() {
         due: None,
         priority: 2,
         child_order: 0,
-        order: 1,
         note_count: 0,
         day_order: 0,
         is_collapsed: false,

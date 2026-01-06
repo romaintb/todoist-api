@@ -24,7 +24,6 @@ fn test_task_creation() {
         due: None,
         priority: 3,
         child_order: 0,
-        order: 1,
         note_count: 0,
         day_order: 0,
         is_collapsed: false,
@@ -46,24 +45,20 @@ fn test_project_creation() {
     let project = Project {
         id: "proj_123".to_string(),
         name: "Test Project".to_string(),
-        comment_count: 5,
-        order: 1,
         color: "blue".to_string(),
         is_shared: false,
         is_favorite: true,
-        is_inbox_project: false,
-        is_team_inbox: false,
+        inbox_project: false,
         view_style: "list".to_string(),
-        url: "https://todoist.com".to_string(),
         parent_id: None,
     };
 
     assert_eq!(project.id, "proj_123");
     assert_eq!(project.name, "Test Project");
-    assert_eq!(project.comment_count, 5);
     assert_eq!(project.color, "blue");
     assert!(!project.is_shared);
     assert!(project.is_favorite);
+    assert!(!project.inbox_project);
     assert_eq!(project.view_style, "list");
 }
 

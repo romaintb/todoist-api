@@ -248,7 +248,6 @@ fn test_serde_serialization() {
         due: None,
         priority: 3,
         child_order: 0,
-        order: 1,
         note_count: 0,
         day_order: 0,
         is_collapsed: false,
@@ -291,7 +290,6 @@ fn test_serde_deserialization() {
         "due": null,
         "priority": 4,
         "child_order": 0,
-        "order": 2,
         "note_count": 1,
         "day_order": 0,
         "is_collapsed": false
@@ -302,7 +300,6 @@ fn test_serde_deserialization() {
     assert_eq!(task.content, "Deserialized task");
     assert_eq!(task.description, "Test deserialization");
     assert_eq!(task.project_id, "proj_456");
-    assert_eq!(task.order, 2);
     assert_eq!(task.priority, 4);
     assert!(task.checked);
     assert_eq!(task.labels.len(), 2);
@@ -335,7 +332,6 @@ fn test_clone_functionality() {
         due: None,
         priority: 2,
         child_order: 0,
-        order: 3,
         note_count: 0,
         day_order: 0,
         is_collapsed: false,
@@ -347,7 +343,6 @@ fn test_clone_functionality() {
     assert_eq!(cloned_task.content, original_task.content);
     assert_eq!(cloned_task.description, original_task.description);
     assert_eq!(cloned_task.project_id, original_task.project_id);
-    assert_eq!(cloned_task.order, original_task.order);
     assert_eq!(cloned_task.priority, original_task.priority);
     assert_eq!(cloned_task.checked, original_task.checked);
     assert_eq!(cloned_task.labels, original_task.labels);
@@ -379,7 +374,6 @@ fn test_debug_formatting() {
         due: None,
         priority: 1,
         child_order: 0,
-        order: 1,
         note_count: 0,
         day_order: 0,
         is_collapsed: false,

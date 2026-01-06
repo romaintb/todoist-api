@@ -22,7 +22,7 @@
 //!     let todoist = TodoistWrapper::new("your-api-token".to_string());
 //!
 //!     // Get all tasks with error handling
-//!     match todoist.get_tasks().await {
+//!     match todoist.get_tasks(None, None).await {
 //!         Ok(response) => println!("Found {} tasks", response.results.len()),
 //!         Err(TodoistError::RateLimited { retry_after, message }) => {
 //!             println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
@@ -92,7 +92,6 @@ mod tests {
             due: None,
             priority: 1,
             child_order: 0,
-            order: 1,
             note_count: 0,
             day_order: 0,
             is_collapsed: false,

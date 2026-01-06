@@ -211,7 +211,11 @@ impl TodoistWrapper {
     // ===== PROJECT OPERATIONS =====
 
     /// Get all projects (paginated)
-    pub async fn get_projects(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Project>> {
+    pub async fn get_projects(
+        &self,
+        limit: Option<i32>,
+        cursor: Option<String>,
+    ) -> TodoistResult<PaginatedResponse<Project>> {
         let mut query_params = Vec::new();
         if let Some(l) = limit {
             query_params.push(("limit", l.to_string()));
@@ -268,7 +272,11 @@ impl TodoistWrapper {
     // ===== TASK OPERATIONS =====
 
     /// Get all tasks (paginated)
-    pub async fn get_tasks(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Task>> {
+    pub async fn get_tasks(
+        &self,
+        limit: Option<i32>,
+        cursor: Option<String>,
+    ) -> TodoistResult<PaginatedResponse<Task>> {
         let mut query_params = Vec::new();
         if let Some(l) = limit {
             query_params.push(("limit", l.to_string()));
@@ -406,7 +414,11 @@ impl TodoistWrapper {
     // ===== LABEL OPERATIONS =====
 
     /// Get all labels (paginated)
-    pub async fn get_labels(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Label>> {
+    pub async fn get_labels(
+        &self,
+        limit: Option<i32>,
+        cursor: Option<String>,
+    ) -> TodoistResult<PaginatedResponse<Label>> {
         let mut query_params = Vec::new();
         if let Some(l) = limit {
             query_params.push(("limit", l.to_string()));
@@ -463,7 +475,11 @@ impl TodoistWrapper {
     // ===== SECTION OPERATIONS =====
 
     /// Get all sections (paginated)
-    pub async fn get_sections(&self, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Section>> {
+    pub async fn get_sections(
+        &self,
+        limit: Option<i32>,
+        cursor: Option<String>,
+    ) -> TodoistResult<PaginatedResponse<Section>> {
         let mut query_params = Vec::new();
         if let Some(l) = limit {
             query_params.push(("limit", l.to_string()));

@@ -88,6 +88,7 @@ mod tests {
             is_deleted: false,
             added_at: "2024-01-01T00:00:00Z".to_string(),
             completed_at: None,
+            completed_by_uid: None,
             updated_at: None,
             due: None,
             priority: 1,
@@ -106,13 +107,26 @@ mod tests {
             inbox_project: false,
             view_style: "list".to_string(),
             parent_id: None,
+            child_order: 0,
+            creator_uid: None,
+            created_at: None,
+            updated_at: None,
+            is_archived: false,
+            is_deleted: false,
+            is_frozen: false,
+            is_collapsed: false,
+            can_assign_tasks: false,
+            default_order: 0,
+            description: String::new(),
+            public_key: String::new(),
+            role: None,
         };
 
         let _label: Label = Label {
             id: "test".to_string(),
             name: "test".to_string(),
             color: "red".to_string(),
-            order: 1,
+            order: Some(1),
             is_favorite: false,
         };
 

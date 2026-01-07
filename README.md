@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let todoist = TodoistWrapper::new("your-api-token".to_string());
 
     // Get all tasks (returns paginated response)
-    let response = todoist.get_tasks().await?;
+    let response = todoist.get_tasks(None, None).await?;
     println!("Found {} tasks", response.results.len());
 
     // Create a new task
@@ -74,7 +74,7 @@ use todoist_api::{TodoistWrapper, TodoistError, TodoistResult};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let todoist = TodoistWrapper::new("your-api-token".to_string());
 
-    match todoist.get_projects().await {
+    match todoist.get_projects(None, None).await {
         Ok(response) => println!("Found {} projects", response.results.len()),
         Err(TodoistError::RateLimited { retry_after, message }) => {
             println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
@@ -113,7 +113,7 @@ async fn get_tasks_with_retry(todoist: &TodoistWrapper) -> TodoistResult<Paginat
 
     loop {
         attempts += 1;
-        let result = todoist.get_tasks().await;
+        let result = todoist.get_tasks(None, None).await;
 
         match result {
             Ok(response) => return Ok(response),
@@ -155,7 +155,7 @@ let todoist = TodoistWrapper::new("your-api-token".to_string());
 
 ```rust
 // Get all tasks (returns paginated response)
-let response = todoist.get_tasks().await?;
+let response = todoist.get_tasks(None, None).await?;
 for task in response.results {
     println!("Task: {}", task.content);
 }
@@ -241,7 +241,7 @@ let response = todoist.get_completed_tasks_by_due_date(&completed_args).await?;
 
 ```rust
 // Get all projects (paginated)
-let response = todoist.get_projects().await?;
+let response = todoist.get_projects(None, None).await?;
 for project in response.results {
     println!("Project: {}", project.name);
 }
@@ -249,12 +249,12 @@ for project in response.results {
 // Get a specific project
 let project = todoist.get_project("project_id").await?;
 
-// Get projects with filtering (paginated)
+// Get projects with filtering
 let filter_args = ProjectFilterArgs {
     limit: Some(20),
-    cursor: None, // Use previous response.next_cursor for next page
+    cursor: None,
 };
-let response = todoist.get_projects_filtered(&filter_args).await?;
+let projects = todoist.get_projects_filtered(&filter_args).await?;
 
 // Create a new project
 let create_args = CreateProjectArgs {
@@ -283,7 +283,7 @@ todoist.delete_project("project_id").await?;
 
 ```rust
 // Get all labels (paginated)
-let response = todoist.get_labels().await?;
+let response = todoist.get_labels(None, None).await?;
 for label in response.results {
     println!("Label: {}", label.name);
 }
@@ -291,12 +291,12 @@ for label in response.results {
 // Get a specific label
 let label = todoist.get_label("label_id").await?;
 
-// Get labels with filtering (paginated)
+// Get labels with filtering
 let filter_args = LabelFilterArgs {
     limit: Some(50),
-    cursor: None, // Use previous response.next_cursor for next page
+    cursor: None,
 };
-let response = todoist.get_labels_filtered(&filter_args).await?;
+let labels = todoist.get_labels_filtered(&filter_args).await?;
 
 // Create a new label
 let create_args = CreateLabelArgs {
@@ -324,7 +324,7 @@ todoist.delete_label("label_id").await?;
 
 ```rust
 // Get all sections (paginated)
-let response = todoist.get_sections().await?;
+let response = todoist.get_sections(None, None).await?;
 for section in response.results {
     println!("Section: {}", section.name);
 }
@@ -444,7 +444,7 @@ All operations return `TodoistResult<T>` with specific error types for precise e
 ```rust
 use todoist_api::{TodoistWrapper, TodoistError};
 
-match todoist.get_tasks().await {
+match todoist.get_tasks(None, None).await {
     Ok(response) => println!("Found {} tasks", response.results.len()),
     Err(TodoistError::RateLimited { retry_after, message }) => {
         println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
@@ -491,7 +491,7 @@ The library includes a comprehensive test suite covering all functionality:
 
 ### Test Coverage
 
-- **Unit Tests**: 47 tests covering all models, argument types, and core functionality
+- **Unit Tests**: 23 tests covering all models, argument types, and core functionality
 - **Integration Tests**: 10 tests for complete workflows (can be run with real API access)
 
 ### Running Tests

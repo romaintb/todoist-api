@@ -10,6 +10,7 @@ const TODOIST_API_BASE: &str = "https://api.todoist.com/api/v1";
 pub struct TodoistWrapper {
     client: Client,
     api_token: String,
+    base_url: String,
 }
 
 impl TodoistWrapper {
@@ -20,7 +21,26 @@ impl TodoistWrapper {
             .timeout(std::time::Duration::from_secs(10))
             .build()
             .unwrap_or_else(|_| Client::new());
-        Self { client, api_token }
+        Self {
+            client,
+            api_token,
+            base_url: TODOIST_API_BASE.to_string(),
+        }
+    }
+
+    /// Create a new Todoist client with custom base URL (for testing)
+    #[doc(hidden)]
+    #[must_use]
+    pub fn with_base_url(api_token: String, base_url: String) -> Self {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .unwrap_or_else(|_| Client::new());
+        Self {
+            client,
+            api_token,
+            base_url,
+        }
     }
 
     /// Helper method for making GET requests
@@ -37,7 +57,11 @@ impl TodoistWrapper {
     where
         T: serde::de::DeserializeOwned,
     {
-        let url = format!("{TODOIST_API_BASE}{endpoint}");
+        let url = format!(
+            "{}/{}",
+            self.base_url.trim_end_matches('/'),
+            endpoint.trim_start_matches('/')
+        );
 
         let response = self
             .client
@@ -58,7 +82,11 @@ impl TodoistWrapper {
     where
         T: serde::de::DeserializeOwned,
     {
-        let url = format!("{TODOIST_API_BASE}{endpoint}");
+        let url = format!(
+            "{}/{}",
+            self.base_url.trim_end_matches('/'),
+            endpoint.trim_start_matches('/')
+        );
         let mut request = self
             .client
             .post(&url)
@@ -81,7 +109,11 @@ impl TodoistWrapper {
     where
         T: serde::de::DeserializeOwned,
     {
-        let url = format!("{TODOIST_API_BASE}{endpoint}");
+        let url = format!(
+            "{}/{}",
+            self.base_url.trim_end_matches('/'),
+            endpoint.trim_start_matches('/')
+        );
         let response = self
             .client
             .delete(&url)
@@ -105,7 +137,11 @@ impl TodoistWrapper {
     where
         T: serde::de::DeserializeOwned,
     {
-        let url = format!("{TODOIST_API_BASE}{endpoint}");
+        let url = format!(
+            "{}/{}",
+            self.base_url.trim_end_matches('/'),
+            endpoint.trim_start_matches('/')
+        );
 
         let response = self
             .client

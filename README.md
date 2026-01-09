@@ -11,16 +11,16 @@ A comprehensive Rust wrapper for the Todoist Unified API v1, providing a clean a
 
 ## Features
 
-- 🚀 **Async/await support** - Built with Tokio for high-performance async operations
-- 📝 **Full CRUD operations** - Create, read, update, and delete all Todoist entities
-- 🏗️ **Project management** - Complete project lifecycle management
-- 🏷️ **Label support** - Full label operations with filtering
-- 📋 **Section management** - Organize projects with sections
-- 💬 **Comment system** - Add and manage comments on tasks and projects
-- 🔍 **Advanced filtering** - Filter tasks, projects, and labels with pagination
-- 🔒 **Type safety** - Full Rust type safety with Serde serialization
-- 🛡️ **Error handling** - Comprehensive error handling with specific error types and rate limiting support
-- 📚 **Well documented** - Extensive documentation
+- **Async/await support** - Built with Tokio for high-performance async operations
+- **Full CRUD operations** - Create, read, update, and delete all Todoist entities
+- **Project management** - Complete project lifecycle management
+- **Label support** - Full label operations with filtering
+- **Section management** - Organize projects with sections
+- **Comment system** - Add and manage comments on tasks and projects
+- **Advanced filtering** - Filter tasks, projects, and labels with pagination
+- **Type safety** - Full Rust type safety with Serde serialization
+- **Error handling** - Comprehensive error handling with specific error types and rate limiting support
+- **Well documented** - Extensive documentation
 
 ## Installation
 
@@ -485,57 +485,6 @@ The library uses sensible defaults:
 - Bearer token authentication
 - Comprehensive error handling with rate limiting detection
 
-## Testing
-
-The library includes a comprehensive test suite covering all functionality:
-
-### Test Coverage
-
-- **Unit Tests**: 23 tests covering all models, argument types, and core functionality
-- **Integration Tests**: 10 tests for complete workflows (can be run with real API access)
-
-### Running Tests
-
-```bash
-# Run all tests
-cargo test
-
-# Run only unit tests (no API access required)
-cargo test --lib
-
-# Run specific test suites
-cargo test models_tests
-cargo test wrapper_tests
-cargo test integration_tests
-
-# Run with verbose output
-cargo test -- --nocapture
-
-# Run ignored tests (requires API token)
-cargo test -- --ignored
-```
-
-### Test Configuration
-
-Set the following environment variables to run integration tests:
-
-```bash
-export TODOIST_API_TOKEN="your-api-token"
-export RUN_INTEGRATION_TESTS=true
-```
-
-### Test Structure
-
-```
-tests/
-├── models_tests.rs      # Data model validation tests
-├── wrapper_tests.rs     # API wrapper functionality tests
-├── integration_tests.rs # End-to-end workflow tests
-├── common/
-│   └── mod.rs          # Test utilities and helpers
-└── config.rs           # Test configuration management
-```
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -548,13 +497,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For detailed release notes and version history, see [CHANGELOG.md](CHANGELOG.md).
 
-## Roadmap
-
-- [x] Task filtering and search
-- [x] Complete API coverage
-- [x] Advanced filtering and pagination
-- [x] Section and comment management
-- [ ] OAuth2 authentication support
-- [ ] Webhook support
-- [ ] Rate limiting and retry logic
-- [ ] Batch operations

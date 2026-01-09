@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is a major release with comprehensive changes due to Todoist deprecating REST API v2. The entire library has been rebuilt to wrap the new Todoist Unified API v1.
 
-**⚠️ This release contains breaking changes across all APIs.** If you're upgrading from 0.x, expect to refactor your code. See the [migration guide](./docs/MIGRATION.md) for upgrade instructions.
+**⚠️ This release contains breaking changes across all APIs.** If you're upgrading from 0.x, expect to refactor your code.
 
 ### Breaking Changes
 - **Complete rewrite**: All public APIs have changed to align with the new Unified API v1 structure

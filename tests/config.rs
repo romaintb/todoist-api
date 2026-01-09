@@ -18,7 +18,7 @@ impl Default for TestConfig {
             run_integration_tests: env::var("RUN_INTEGRATION_TESTS").is_ok(),
             api_token: env::var("TODOIST_API_TOKEN").ok(),
             base_url: env::var("TODOIST_TEST_BASE_URL")
-                .unwrap_or_else(|_| "https://api.todoist.com/rest/v2".to_string()),
+                .unwrap_or_else(|_| "https://api.todoist.com/api/v1".to_string()),
             timeout_seconds: env::var("TODOIST_TEST_TIMEOUT")
                 .unwrap_or_else(|_| "30".to_string())
                 .parse()
@@ -109,7 +109,7 @@ mod tests {
         assert!(!config.run_integration_tests);
         // API token might or might not be set in test environment
         // assert!(config.api_token.is_some());
-        assert_eq!(config.base_url, "https://api.todoist.com/rest/v2");
+        assert_eq!(config.base_url, "https://api.todoist.com/api/v1");
         assert_eq!(config.timeout_seconds, 30);
     }
 
@@ -118,8 +118,9 @@ mod tests {
         let config = TestConfig::new();
 
         assert!(!config.should_run_integration_tests());
-        assert!(!config.has_real_api_token());
-        assert_eq!(config.get_base_url(), "https://api.todoist.com/rest/v2");
+        // Skip assertion on has_real_api_token() - it depends on environment
+        // In development, a real token might be set; in CI, it won't be
+        assert_eq!(config.get_base_url(), "https://api.todoist.com/api/v1");
         assert_eq!(config.get_timeout_seconds(), 30);
     }
 

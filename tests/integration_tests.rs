@@ -1,250 +1,1254 @@
+use serde_json::json;
 use todoist_api::*;
-
-// Note: These are integration tests that would require a real Todoist API token
-// In a real CI environment, you'd use a test token or mock the API responses
+use wiremock::{
+    matchers::{method, path, query_param},
+    Mock, MockServer, ResponseTemplate,
+};
 
 #[tokio::test]
-#[ignore] // Ignore by default since they require API access
-async fn test_complete_workflow() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_wrapper_creation() {
+    let _todoist = TodoistWrapper::new("test-token".to_string());
+}
 
-    // Test project creation
-    let project_args = CreateProjectArgs {
-        name: "Test Project".to_string(),
-        color: Some("blue".to_string()),
-        is_favorite: Some(false),
-        view_style: Some("list".to_string()),
-        parent_id: None,
-    };
+// ===== PROJECT OPERATIONS =====
 
-    // Note: In real tests, you'd create the project and then clean it up
-    // For now, we'll just test the argument building
-    assert_eq!(project_args.name, "Test Project");
-    assert_eq!(project_args.color, Some("blue".to_string()));
-    assert_eq!(project_args.is_favorite, Some(false));
-    assert_eq!(project_args.view_style, Some("list".to_string()));
+#[tokio::test]
+async fn test_get_projects() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/projects"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "proj_123",
+                    "name": "Test Project",
+                    "color": "blue",
+                    "shared": false,
+                    "is_favorite": false,
+                    "is_inbox_project": false,
+                    "view_style": "list"
+                }
+            ],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_projects(None, None).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].id, "proj_123");
+    assert!(response.next_cursor.is_none());
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_task_management_workflow() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_get_projects_with_limit() {
+    let mock_server = MockServer::start().await;
 
-    // Test task creation arguments
-    let task_args = CreateTaskArgs {
-        content: "Integration test task".to_string(),
-        description: Some("This is a test task for integration testing".to_string()),
-        project_id: None, // Inbox
-        priority: Some(3),
-        labels: Some(vec!["test".to_string(), "integration".to_string()]),
-        due_string: Some("tomorrow".to_string()),
+    Mock::given(method("GET"))
+        .and(path("/projects"))
+        .and(query_param("limit", "10"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_projects(Some(10), None).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_project() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/projects/proj_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "proj_123",
+            "name": "Test Project",
+            "color": "blue",
+            "shared": false,
+            "is_favorite": false,
+            "is_inbox_project": false,
+            "view_style": "list"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_project("proj_123").await;
+    assert!(result.is_ok());
+    let project = result.unwrap();
+    assert_eq!(project.id, "proj_123");
+    assert_eq!(project.name, "Test Project");
+}
+
+#[tokio::test]
+async fn test_get_project_not_found() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/projects/notexist"))
+        .respond_with(ResponseTemplate::new(404).set_body_json(json!({
+            "error": "Project not found"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_project("notexist").await;
+    assert!(result.is_err());
+    match result {
+        Err(TodoistError::NotFound { .. }) => (),
+        _ => panic!("Expected NotFound error"),
+    }
+}
+
+#[tokio::test]
+async fn test_create_project() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/projects"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "new_proj",
+            "name": "New Project",
+            "color": "red",
+            "shared": false,
+            "is_favorite": false,
+            "is_inbox_project": false,
+            "view_style": "list"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CreateProjectArgs {
+        name: "New Project".to_string(),
+        color: Some("red".to_string()),
         ..Default::default()
     };
 
-    assert_eq!(task_args.content, "Integration test task");
-    assert_eq!(
-        task_args.description,
-        Some("This is a test task for integration testing".to_string())
-    );
-    assert_eq!(task_args.priority, Some(3));
-    assert_eq!(
-        task_args.labels,
-        Some(vec!["test".to_string(), "integration".to_string()])
-    );
-    assert_eq!(task_args.due_string, Some("tomorrow".to_string()));
+    let result = todoist.create_project(&args).await;
+    assert!(result.is_ok());
+    let project = result.unwrap();
+    assert_eq!(project.id, "new_proj");
+    assert_eq!(project.name, "New Project");
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_label_management_workflow() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_update_project() {
+    let mock_server = MockServer::start().await;
 
-    // Test label creation arguments
-    let label_args = CreateLabelArgs {
-        name: "Integration Test Label".to_string(),
-        color: Some("red".to_string()),
-        order: Some(1),
-        is_favorite: Some(true),
+    Mock::given(method("POST"))
+        .and(path("/projects/proj_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "proj_123",
+            "name": "Updated Name",
+            "color": "green",
+            "shared": false,
+            "is_favorite": true,
+            "is_inbox_project": false,
+            "view_style": "list"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = UpdateProjectArgs {
+        name: Some("Updated Name".to_string()),
+        color: Some("green".to_string()),
+        ..Default::default()
     };
 
-    assert_eq!(label_args.name, "Integration Test Label");
-    assert_eq!(label_args.color, Some("red".to_string()));
-    assert_eq!(label_args.order, Some(1));
-    assert_eq!(label_args.is_favorite, Some(true));
+    let result = todoist.update_project("proj_123", &args).await;
+    assert!(result.is_ok());
+    let project = result.unwrap();
+    assert_eq!(project.name, "Updated Name");
+    assert_eq!(project.color, "green");
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_section_management_workflow() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_update_project_no_fields() {
+    let todoist = TodoistWrapper::new("test-token".to_string());
+    let args = UpdateProjectArgs::default();
 
-    // Test section creation arguments
-    let section_args = CreateSectionArgs {
-        name: "Test Section".to_string(),
-        project_id: "test_project_id".to_string(),
-        order: Some(1),
+    let result = todoist.update_project("proj_123", &args).await;
+    assert!(result.is_err());
+    match result {
+        Err(TodoistError::ValidationError { .. }) => (),
+        _ => panic!("Expected ValidationError"),
+    }
+}
+
+#[tokio::test]
+async fn test_delete_project() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/projects/proj_123"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.delete_project("proj_123").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_projects_filtered() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/projects"))
+        .and(query_param("limit", "5"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {
+                "id": "proj_1",
+                "name": "Project 1",
+                "color": "blue",
+                "shared": false,
+                "is_favorite": false,
+                "is_inbox_project": false,
+                "view_style": "list"
+            }
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = ProjectFilterArgs {
+        limit: Some(5),
+        cursor: None,
     };
 
-    assert_eq!(section_args.name, "Test Section");
-    assert_eq!(section_args.project_id, "test_project_id");
-    assert_eq!(section_args.order, Some(1));
+    let result = todoist.get_projects_filtered(&args).await;
+    assert!(result.is_ok());
+    let projects = result.unwrap();
+    assert_eq!(projects.len(), 1);
+    assert_eq!(projects[0].id, "proj_1");
+}
+
+// ===== TASK OPERATIONS =====
+
+#[tokio::test]
+async fn test_get_tasks() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/tasks"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "task_123",
+                    "creator_id": "user_1",
+                    "content": "Test Task",
+                    "description": "Test description",
+                    "project_id": "proj_1",
+                    "section_id": null,
+                    "parent_id": null,
+                    "added_by_uid": null,
+                    "assigned_by_uid": null,
+                    "responsible_uid": null,
+                    "labels": [],
+                    "deadline": null,
+                    "duration": null,
+                    "added_at": "2024-01-01T00:00:00Z",
+                    "updated_at": null,
+                    "due": null,
+                    "priority":1,
+                    "child_order": 0,
+                    "note_count": 0,
+                    "day_order": 0,
+                    "is_collapsed": false
+                }
+            ],
+            "next_cursor": "cursor123"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_tasks(None, None).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].id, "task_123");
+    assert_eq!(response.next_cursor, Some("cursor123".to_string()));
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_comment_management_workflow() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_get_task() {
+    let mock_server = MockServer::start().await;
 
-    // Test comment creation arguments
-    let comment_args = CreateCommentArgs {
-        content: "This is a test comment".to_string(),
-        task_id: Some("test_task_id".to_string()),
-        project_id: None,
-        attachment: None,
+    Mock::given(method("GET"))
+        .and(path("/tasks/task_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "task_123",
+            "creator_id": "user_1",
+            "content": "Single Task",
+            "description": "Description",
+            "project_id": "proj_1",
+            "section_id": null,
+            "parent_id": null,
+            "added_by_uid": null,
+            "assigned_by_uid": null,
+            "responsible_uid": null,
+            "labels": [],
+            "deadline": null,
+            "duration": null,
+            "added_at": "2024-01-01T00:00:00Z",
+            "updated_at": null,
+            "due": null,
+            "priority": 2,
+            "child_order": 0,
+            "note_count": 0,
+            "day_order": 0,
+            "is_collapsed": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_task("task_123").await;
+    assert!(result.is_ok());
+    let task = result.unwrap();
+    assert_eq!(task.id, "task_123");
+    assert_eq!(task.content, "Single Task");
+}
+
+#[tokio::test]
+async fn test_create_task() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/tasks"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "new_task",
+            "creator_id": "user_1",
+            "content": "New Task",
+            "description": "New Description",
+            "project_id": "proj_1",
+            "section_id": null,
+            "parent_id": null,
+            "added_by_uid": null,
+            "assigned_by_uid": null,
+            "responsible_uid": null,
+            "labels": ["important"],
+            "deadline": null,
+            "duration": null,
+            "added_at": "2024-01-01T00:00:00Z",
+            "updated_at": null,
+            "due": null,
+            "priority": 3,
+            "child_order": 0,
+            "note_count": 0,
+            "day_order": 0,
+            "is_collapsed": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CreateTaskArgs {
+        content: "New Task".to_string(),
+        description: Some("New Description".to_string()),
+        project_id: Some("proj_1".to_string()),
+        priority: Some(3),
+        labels: Some(vec!["important".to_string()]),
+        ..Default::default()
     };
 
-    assert_eq!(comment_args.content, "This is a test comment");
-    assert_eq!(comment_args.task_id, Some("test_task_id".to_string()));
-    assert!(comment_args.project_id.is_none());
-    assert!(comment_args.attachment.is_none());
+    let result = todoist.create_task(&args).await;
+    assert!(result.is_ok());
+    let task = result.unwrap();
+    assert_eq!(task.id, "new_task");
+    assert_eq!(task.content, "New Task");
+    assert_eq!(task.priority, 3);
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_filtering_workflow() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_update_task() {
+    let mock_server = MockServer::start().await;
 
-    // Test various filter combinations
-    let task_filter = TaskFilterArgs {
+    Mock::given(method("POST"))
+        .and(path("/tasks/task_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "task_123",
+            "creator_id": "user_1",
+            "content": "Updated Task",
+            "description": "Updated Description",
+            "project_id": "proj_1",
+            "section_id": null,
+            "parent_id": null,
+            "added_by_uid": null,
+            "assigned_by_uid": null,
+            "responsible_uid": null,
+            "labels": [],
+            "deadline": null,
+            "duration": null,
+            "added_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "due": null,
+            "priority": 4,
+            "child_order": 0,
+            "note_count": 0,
+            "day_order": 0,
+            "is_collapsed": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = UpdateTaskArgs {
+        content: Some("Updated Task".to_string()),
+        description: Some("Updated Description".to_string()),
+        priority: Some(4),
+        ..Default::default()
+    };
+
+    let result = todoist.update_task("task_123", &args).await;
+    assert!(result.is_ok());
+    let task = result.unwrap();
+    assert_eq!(task.content, "Updated Task");
+    assert_eq!(task.priority, 4);
+}
+
+#[tokio::test]
+async fn test_complete_task() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/tasks/task_123/close"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.complete_task("task_123").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_reopen_task() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/tasks/task_123/reopen"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.reopen_task("task_123").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_delete_task() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/tasks/task_123"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.delete_task("task_123").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_tasks_for_project() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/tasks"))
+        .and(query_param("project_id", "proj_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "task_1",
+                    "creator_id": "user_1",
+                    "content": "Project Task",
+                    "description": "",
+                    "project_id": "proj_123",
+                    "section_id": null,
+                    "parent_id": null,
+                    "added_by_uid": null,
+                    "assigned_by_uid": null,
+                    "responsible_uid": null,
+                    "labels": [],
+                    "deadline": null,
+                    "duration": null,
+                    "added_at": "2024-01-01T00:00:00Z",
+                    "updated_at": null,
+                    "due": null,
+                    "priority": 1,
+                    "child_order": 0,
+                    "note_count": 0,
+                    "day_order": 0,
+                    "is_collapsed": false
+                }
+            ],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_tasks_for_project("proj_123", None, None).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].project_id, "proj_123");
+}
+
+#[tokio::test]
+async fn test_get_tasks_by_filter() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/tasks"))
+        .and(query_param("query", "today"))
+        .and(query_param("lang", "en"))
+        .and(query_param("limit", "20"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = TaskFilterArgs {
         query: "today".to_string(),
         lang: Some("en".to_string()),
         limit: Some(20),
         cursor: None,
     };
 
-    let project_filter = ProjectFilterArgs {
-        limit: Some(10),
-        cursor: None,
-    };
-
-    let label_filter = LabelFilterArgs {
-        limit: Some(50),
-        cursor: None,
-    };
-
-    assert_eq!(task_filter.query, "today");
-    assert_eq!(task_filter.lang, Some("en".to_string()));
-    assert_eq!(task_filter.limit, Some(20));
-
-    assert_eq!(project_filter.limit, Some(10));
-    assert!(project_filter.cursor.is_none());
-
-    assert_eq!(label_filter.limit, Some(50));
-    assert!(label_filter.cursor.is_none());
+    let result = todoist.get_tasks_by_filter(&args).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 0);
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_error_handling() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_get_completed_tasks_by_completion_date() {
+    let mock_server = MockServer::start().await;
 
-    // Test that invalid project IDs are handled gracefully
-    // This would test the actual API error responses
-    // For now, we'll just test the wrapper creation
-    // No assertion needed - if this function completes without panic, the test passes
+    Mock::given(method("GET"))
+        .and(path("/tasks/completed/by_completion_date"))
+        .and(query_param("since", "2024-01-01T00:00:00Z"))
+        .and(query_param("until", "2024-01-31T23:59:59Z"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CompletedTasksFilterArgs {
+        since: Some("2024-01-01T00:00:00Z".to_string()),
+        until: Some("2024-01-31T23:59:59Z".to_string()),
+        ..Default::default()
+    };
+
+    let result = todoist.get_completed_tasks_by_completion_date(&args).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 0);
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_convenience_methods() {
-    let api_token = std::env::var("TODOIST_API_TOKEN").unwrap_or_else(|_| "test-token".to_string());
-    let _todoist = TodoistWrapper::new(api_token);
+async fn test_get_completed_tasks_by_due_date() {
+    let mock_server = MockServer::start().await;
 
-    // Test the convenience methods
-    // These methods should work even without API access since they just build arguments
-    let simple_task_args = CreateTaskArgs {
-        content: "Simple task".to_string(),
+    Mock::given(method("GET"))
+        .and(path("/tasks/completed/by_due_date"))
+        .and(query_param("project_id", "proj_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CompletedTasksFilterArgs {
         project_id: Some("proj_123".to_string()),
         ..Default::default()
     };
 
-    assert_eq!(simple_task_args.content, "Simple task");
-    assert_eq!(simple_task_args.project_id, Some("proj_123".to_string()));
-    assert!(simple_task_args.description.is_none());
-    assert!(simple_task_args.priority.is_none());
+    let result = todoist.get_completed_tasks_by_due_date(&args).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 0);
+}
+
+// ===== LABEL OPERATIONS =====
+
+#[tokio::test]
+async fn test_get_labels() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/labels"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "label_1",
+                    "name": "Important",
+                    "color": "red",
+                    "order": 1,
+                    "is_favorite": false
+                }
+            ],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_labels(None, None).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].id, "label_1");
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_data_model_consistency() {
-    // Test that our data models are consistent with the API
-    let task = Task {
-        id: "test_id".to_string(),
-        content: "Test content".to_string(),
-        description: "Test description".to_string(),
-        project_id: "test_project".to_string(),
-        section_id: None,
-        parent_id: None,
-        order: 1,
-        priority: 2,
-        is_completed: false,
-        labels: vec!["test".to_string()],
-        created_at: "2024-01-01T00:00:00Z".to_string(),
-        due: None,
-        deadline: None,
-        duration: None,
-        assignee_id: None,
-        url: "https://todoist.com".to_string(),
-        comment_count: 0,
-    };
+async fn test_get_label() {
+    let mock_server = MockServer::start().await;
 
-    // Test that all required fields are present
-    assert!(!task.id.is_empty());
-    assert!(!task.content.is_empty());
-    assert!(!task.description.is_empty());
-    assert!(!task.project_id.is_empty());
-    assert!(!task.created_at.is_empty());
-    assert!(!task.url.is_empty());
+    Mock::given(method("GET"))
+        .and(path("/labels/label_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "label_123",
+            "name": "Work",
+            "color": "blue",
+            "order": 2,
+            "is_favorite": true
+        })))
+        .mount(&mock_server)
+        .await;
 
-    // Test that optional fields can be None
-    assert!(task.section_id.is_none());
-    assert!(task.parent_id.is_none());
-    assert!(task.due.is_none());
-    assert!(task.deadline.is_none());
-    assert!(task.duration.is_none());
-    assert!(task.assignee_id.is_none());
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_label("label_123").await;
+    assert!(result.is_ok());
+    let label = result.unwrap();
+    assert_eq!(label.id, "label_123");
+    assert_eq!(label.name, "Work");
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_argument_builder_patterns() {
-    // Test common argument building patterns
-    let task_args = CreateTaskArgs {
-        content: "Built task".to_string(),
-        priority: Some(4),
-        labels: Some(vec!["built".to_string(), "task".to_string()]),
+async fn test_create_label() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/labels"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "new_label",
+            "name": "New Label",
+            "color": "green",
+            "order": 3,
+            "is_favorite": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CreateLabelArgs {
+        name: "New Label".to_string(),
+        color: Some("green".to_string()),
+        order: Some(3),
         ..Default::default()
     };
 
-    assert_eq!(task_args.content, "Built task");
-    assert_eq!(task_args.priority, Some(4));
-    assert_eq!(task_args.labels, Some(vec!["built".to_string(), "task".to_string()]));
+    let result = todoist.create_label(&args).await;
+    assert!(result.is_ok());
+    let label = result.unwrap();
+    assert_eq!(label.id, "new_label");
+    assert_eq!(label.name, "New Label");
+}
 
-    // Test update pattern
-    let update_args = UpdateTaskArgs {
-        content: Some("Updated content".to_string()),
-        priority: Some(1),
+#[tokio::test]
+async fn test_update_label() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/labels/label_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "label_123",
+            "name": "Updated Label",
+            "color": "purple",
+            "order": 5,
+            "is_favorite": true
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = UpdateLabelArgs {
+        name: Some("Updated Label".to_string()),
+        color: Some("purple".to_string()),
+        order: Some(5),
+        is_favorite: Some(true),
+    };
+
+    let result = todoist.update_label("label_123", &args).await;
+    assert!(result.is_ok());
+    let label = result.unwrap();
+    assert_eq!(label.name, "Updated Label");
+    assert_eq!(label.color, "purple");
+}
+
+#[tokio::test]
+async fn test_delete_label() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/labels/label_123"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.delete_label("label_123").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_labels_filtered() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/labels"))
+        .and(query_param("limit", "10"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {
+                "id": "label_1",
+                "name": "Label 1",
+                "color": "red",
+                "order": 1,
+                "is_favorite": false
+            }
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = LabelFilterArgs {
+        limit: Some(10),
+        cursor: None,
+    };
+
+    let result = todoist.get_labels_filtered(&args).await;
+    assert!(result.is_ok());
+    let labels = result.unwrap();
+    assert_eq!(labels.len(), 1);
+    assert_eq!(labels[0].id, "label_1");
+}
+
+// ===== SECTION OPERATIONS =====
+
+#[tokio::test]
+async fn test_get_sections() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/sections"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "sec_123",
+                    "creator_id": "user_1",
+                    "project_id": "proj_1",
+                    "added_at": "2024-01-01T00:00:00Z",
+                    "updated_at": null,
+                    "archived_at": null,
+                    "name": "Development",
+                    "section_order": 1,
+                    "is_archived": false,
+                    "is_collapsed": false
+                }
+            ],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_sections(None, None).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].id, "sec_123");
+}
+
+#[tokio::test]
+async fn test_get_section() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/sections/sec_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "sec_123",
+            "creator_id": "user_1",
+            "project_id": "proj_1",
+            "added_at": "2024-01-01T00:00:00Z",
+            "updated_at": null,
+            "archived_at": null,
+            "name": "Testing",
+            "section_order": 2,
+            "is_archived": false,
+            "is_collapsed": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_section("sec_123").await;
+    assert!(result.is_ok());
+    let section = result.unwrap();
+    assert_eq!(section.id, "sec_123");
+    assert_eq!(section.name, "Testing");
+}
+
+#[tokio::test]
+async fn test_create_section() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/sections"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "new_sec",
+            "creator_id": "user_1",
+            "project_id": "proj_1",
+            "added_at": "2024-01-01T00:00:00Z",
+            "updated_at": null,
+            "archived_at": null,
+            "name": "New Section",
+            "section_order": 3,
+            "is_archived": false,
+            "is_collapsed": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CreateSectionArgs {
+        name: "New Section".to_string(),
+        project_id: "proj_1".to_string(),
+        order: Some(3),
+    };
+
+    let result = todoist.create_section(&args).await;
+    assert!(result.is_ok());
+    let section = result.unwrap();
+    assert_eq!(section.id, "new_sec");
+    assert_eq!(section.name, "New Section");
+}
+
+#[tokio::test]
+async fn test_update_section() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/sections/sec_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "sec_123",
+            "creator_id": "user_1",
+            "project_id": "proj_1",
+            "added_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "archived_at": null,
+            "name": "Updated Section",
+            "section_order": 1,
+            "is_archived": false,
+            "is_collapsed": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = UpdateSectionArgs {
+        name: "Updated Section".to_string(),
+    };
+
+    let result = todoist.update_section("sec_123", &args).await;
+    assert!(result.is_ok());
+    let section = result.unwrap();
+    assert_eq!(section.name, "Updated Section");
+}
+
+#[tokio::test]
+async fn test_delete_section() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/sections/sec_123"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.delete_section("sec_123").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_sections_filtered() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/sections"))
+        .and(query_param("project_id", "proj_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "sec_1",
+                    "creator_id": "user_1",
+                    "project_id": "proj_123",
+                    "added_at": "2024-01-01T00:00:00Z",
+                    "updated_at": null,
+                    "archived_at": null,
+                    "name": "Section 1",
+                    "section_order": 1,
+                    "is_archived": false,
+                    "is_collapsed": false
+                }
+            ],
+            "next_cursor": null
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = SectionFilterArgs {
+        project_id: Some("proj_123".to_string()),
+        limit: None,
+        cursor: None,
+    };
+
+    let result = todoist.get_sections_filtered(&args).await;
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].project_id, "proj_123");
+}
+
+// ===== COMMENT OPERATIONS =====
+
+#[tokio::test]
+async fn test_get_comments() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/comments"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {
+                "id": "comment_1",
+                "content": "Test comment",
+                "posted_at": "2024-01-01T00:00:00Z",
+                "attachment": null,
+                "project_id": null,
+                "task_id": "task_1"
+            }
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_comments().await;
+    assert!(result.is_ok());
+    let comments = result.unwrap();
+    assert_eq!(comments.len(), 1);
+    assert_eq!(comments[0].id, "comment_1");
+}
+
+#[tokio::test]
+async fn test_get_comment() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/comments/comment_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "comment_123",
+            "content": "Single comment",
+            "posted_at": "2024-01-01T00:00:00Z",
+            "attachment": null,
+            "project_id": null,
+            "task_id": "task_1"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_comment("comment_123").await;
+    assert!(result.is_ok());
+    let comment = result.unwrap();
+    assert_eq!(comment.id, "comment_123");
+    assert_eq!(comment.content, "Single comment");
+}
+
+#[tokio::test]
+async fn test_create_comment() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/comments"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "new_comment",
+            "content": "New comment",
+            "posted_at": "2024-01-01T00:00:00Z",
+            "attachment": null,
+            "project_id": null,
+            "task_id": "task_1"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CreateCommentArgs {
+        content: "New comment".to_string(),
+        task_id: Some("task_1".to_string()),
+        project_id: None,
+        attachment: None,
+    };
+
+    let result = todoist.create_comment(&args).await;
+    assert!(result.is_ok());
+    let comment = result.unwrap();
+    assert_eq!(comment.id, "new_comment");
+    assert_eq!(comment.content, "New comment");
+}
+
+#[tokio::test]
+async fn test_update_comment() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/comments/comment_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "comment_123",
+            "content": "Updated comment",
+            "posted_at": "2024-01-01T00:00:00Z",
+            "attachment": null,
+            "project_id": null,
+            "task_id": "task_1"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = UpdateCommentArgs {
+        content: "Updated comment".to_string(),
+    };
+
+    let result = todoist.update_comment("comment_123", &args).await;
+    assert!(result.is_ok());
+    let comment = result.unwrap();
+    assert_eq!(comment.content, "Updated comment");
+}
+
+#[tokio::test]
+async fn test_delete_comment() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/comments/comment_123"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.delete_comment("comment_123").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_comments_filtered() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/comments"))
+        .and(query_param("task_id", "task_123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {
+                "id": "comment_1",
+                "content": "Task comment",
+                "posted_at": "2024-01-01T00:00:00Z",
+                "attachment": null,
+                "project_id": null,
+                "task_id": "task_123"
+            }
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CommentFilterArgs {
+        task_id: Some("task_123".to_string()),
+        project_id: None,
+        limit: None,
+        cursor: None,
+    };
+
+    let result = todoist.get_comments_filtered(&args).await;
+    assert!(result.is_ok());
+    let comments = result.unwrap();
+    assert_eq!(comments.len(), 1);
+    assert_eq!(comments[0].task_id, Some("task_123".to_string()));
+}
+
+// ===== ERROR HANDLING TESTS =====
+
+#[tokio::test]
+async fn test_rate_limiting() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/tasks"))
+        .respond_with(
+            ResponseTemplate::new(429)
+                .insert_header("Retry-After", "60")
+                .set_body_json(json!({
+                    "error": "Rate limit exceeded"
+                })),
+        )
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_tasks(None, None).await;
+    assert!(result.is_err());
+    match result {
+        Err(TodoistError::RateLimited { retry_after, message }) => {
+            assert_eq!(retry_after, Some(60));
+            assert!(message.contains("Rate limit exceeded"));
+        }
+        _ => panic!("Expected RateLimited error"),
+    }
+}
+
+#[tokio::test]
+async fn test_authentication_error() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/projects"))
+        .respond_with(ResponseTemplate::new(401).set_body_json(json!({
+            "error": "Unauthorized"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_projects(None, None).await;
+    assert!(result.is_err());
+    match result {
+        Err(TodoistError::AuthenticationError { .. }) => (),
+        _ => panic!("Expected AuthenticationError"),
+    }
+}
+
+#[tokio::test]
+async fn test_server_error() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/labels"))
+        .respond_with(ResponseTemplate::new(500).set_body_json(json!({
+            "error": "Internal server error"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let result = todoist.get_labels(None, None).await;
+    assert!(result.is_err());
+    match result {
+        Err(TodoistError::ServerError { status_code, .. }) => {
+            assert_eq!(status_code, 500);
+        }
+        _ => panic!("Expected ServerError"),
+    }
+}
+
+#[tokio::test]
+async fn test_validation_error() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/tasks"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(json!({
+            "error": "Invalid content"
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let args = CreateTaskArgs {
+        content: "".to_string(),
         ..Default::default()
     };
 
-    assert_eq!(update_args.content, Some("Updated content".to_string()));
-    assert_eq!(update_args.priority, Some(1));
-    assert!(update_args.description.is_none()); // Should remain None
+    let result = todoist.create_task(&args).await;
+    assert!(result.is_err());
+    match result {
+        Err(TodoistError::ValidationError { .. }) => (),
+        _ => panic!("Expected ValidationError"),
+    }
 }

@@ -1,0 +1,518 @@
+{
+  "_meta": {
+    "source": "Todoist Unified API v1",
+    "documentation_url": "https://developer.todoist.com/api/v1/",
+    "extracted_at": "2026-01-07",
+    "description": "JSON examples extracted from the official API documentation for use in tests"
+  },
+  "task": {
+    "description": "Task object (ItemSyncView in API)",
+    "example": {
+      "user_id": "12345678",
+      "id": "6X6WMMqgq2PWxjCX",
+      "project_id": "6XGgm6PHrGgMpCFX",
+      "section_id": null,
+      "parent_id": null,
+      "added_by_uid": null,
+      "assigned_by_uid": null,
+      "responsible_uid": null,
+      "labels": ["work", "priority"],
+      "deadline": null,
+      "duration": {"amount": 30, "unit": "minute"},
+      "checked": false,
+      "is_deleted": false,
+      "added_at": "2024-01-15T10:00:00Z",
+      "completed_at": null,
+      "completed_by_uid": null,
+      "updated_at": "2024-01-15T12:00:00Z",
+      "due": {
+        "date": "2024-01-20",
+        "string": "Jan 20",
+        "lang": "en",
+        "is_recurring": false,
+        "datetime": null,
+        "timezone": null
+      },
+      "priority": 4,
+      "child_order": 1,
+      "content": "Review project documentation",
+      "description": "Check all sections for completeness",
+      "note_count": 0,
+      "day_order": -1,
+      "is_collapsed": false
+    },
+    "example_with_datetime": {
+      "user_id": "12345678",
+      "id": "7Y7XNNrhsj3QWyDY",
+      "project_id": "6XGgm6PHrGgMpCFX",
+      "section_id": "6fFPHV272WWh3gpW",
+      "parent_id": null,
+      "added_by_uid": "12345678",
+      "assigned_by_uid": null,
+      "responsible_uid": null,
+      "labels": [],
+      "deadline": {"date": "2024-01-25", "lang": "en"},
+      "duration": null,
+      "checked": false,
+      "is_deleted": false,
+      "added_at": "2024-01-10T08:30:00Z",
+      "completed_at": null,
+      "completed_by_uid": null,
+      "updated_at": null,
+      "due": {
+        "date": "2024-01-18",
+        "string": "Jan 18 at 2pm",
+        "lang": "en",
+        "is_recurring": false,
+        "datetime": "2024-01-18T14:00:00Z",
+        "timezone": "Europe/Paris"
+      },
+      "priority": 1,
+      "child_order": 0,
+      "content": "Team meeting",
+      "description": "",
+      "note_count": 0,
+      "day_order": 0,
+      "is_collapsed": false
+    },
+    "example_minimal": {
+      "user_id": "12345678",
+      "id": "8Z8YOOrij4RXzkEZ",
+      "project_id": "6XGgm6PHrGgMpCFX",
+      "section_id": null,
+      "parent_id": null,
+      "added_by_uid": null,
+      "assigned_by_uid": null,
+      "responsible_uid": null,
+      "labels": [],
+      "deadline": null,
+      "duration": null,
+      "checked": false,
+      "is_deleted": false,
+      "added_at": "2024-01-15T10:00:00Z",
+      "completed_at": null,
+      "completed_by_uid": null,
+      "updated_at": null,
+      "due": null,
+      "priority": 1,
+      "child_order": 0,
+      "content": "Simple task",
+      "description": "",
+      "note_count": 0,
+      "day_order": -1,
+      "is_collapsed": false
+    }
+  },
+  "project": {
+    "description": "Project object (PersonalProjectSyncView in API)",
+    "example": {
+      "id": "6XGgm6PHrGgMpCFX",
+      "can_assign_tasks": true,
+      "child_order": 1,
+      "color": "charcoal",
+      "creator_uid": "12345678",
+      "created_at": "2024-01-01T00:00:00Z",
+      "is_archived": false,
+      "is_deleted": false,
+      "is_favorite": true,
+      "is_frozen": false,
+      "name": "My Project",
+      "updated_at": "2024-01-15T10:00:00Z",
+      "view_style": "list",
+      "default_order": 0,
+      "description": "Project description",
+      "public_key": "abc123publickey",
+      "access": null,
+      "role": "owner",
+      "parent_id": null,
+      "inbox_project": false,
+      "is_collapsed": false,
+      "is_shared": false
+    },
+    "example_inbox": {
+      "id": "2331234567",
+      "can_assign_tasks": false,
+      "child_order": 0,
+      "color": "grey",
+      "creator_uid": "12345678",
+      "created_at": "2020-01-01T00:00:00Z",
+      "is_archived": false,
+      "is_deleted": false,
+      "is_favorite": false,
+      "is_frozen": false,
+      "name": "Inbox",
+      "updated_at": null,
+      "view_style": "list",
+      "default_order": 0,
+      "description": "",
+      "public_key": "",
+      "access": null,
+      "role": "owner",
+      "parent_id": null,
+      "inbox_project": true,
+      "is_collapsed": false,
+      "is_shared": false
+    },
+    "example_shared": {
+      "id": "7YHhn7QIrHhNqDGY",
+      "can_assign_tasks": true,
+      "child_order": 2,
+      "color": "blue",
+      "creator_uid": "12345678",
+      "created_at": "2024-01-05T00:00:00Z",
+      "is_archived": false,
+      "is_deleted": false,
+      "is_favorite": false,
+      "is_frozen": false,
+      "name": "Shared Project",
+      "updated_at": "2024-01-10T00:00:00Z",
+      "view_style": "board",
+      "default_order": 0,
+      "description": "A shared project",
+      "public_key": "def456publickey",
+      "access": {
+        "permissions": ["read", "write"],
+        "role": "editor"
+      },
+      "role": "editor",
+      "parent_id": null,
+      "inbox_project": false,
+      "is_collapsed": false,
+      "is_shared": true
+    }
+  },
+  "section": {
+    "description": "Section object (SectionSyncView in API)",
+    "example": {
+      "id": "6fFPHV272WWh3gpW",
+      "user_id": "12345678",
+      "project_id": "6XGgm6PHrGgMpCFX",
+      "added_at": "2024-01-05T09:00:00Z",
+      "updated_at": "2024-01-10T14:30:00Z",
+      "archived_at": null,
+      "name": "In Progress",
+      "section_order": 1,
+      "is_archived": false,
+      "is_deleted": false,
+      "is_collapsed": false
+    },
+    "example_archived": {
+      "id": "7gGQIW383XXi4hqX",
+      "user_id": "12345678",
+      "project_id": "6XGgm6PHrGgMpCFX",
+      "added_at": "2024-01-01T09:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z",
+      "archived_at": "2024-01-15T10:00:00Z",
+      "name": "Done",
+      "section_order": 3,
+      "is_archived": true,
+      "is_deleted": false,
+      "is_collapsed": true
+    }
+  },
+  "label": {
+    "description": "Label object (LabelRestView in API)",
+    "example": {
+      "id": "6XhkR5XTrGvMpJNg",
+      "name": "priority",
+      "color": "red",
+      "order": 1,
+      "is_favorite": true
+    },
+    "example_no_order": {
+      "id": "7YilS6YUrHwNqKOh",
+      "name": "work",
+      "color": "blue",
+      "order": null,
+      "is_favorite": false
+    }
+  },
+  "comment": {
+    "description": "Comment object (NoteSyncView in API)",
+    "example": {
+      "id": "8ZjmT7ZVsIxOrLPi",
+      "posted_uid": "12345678",
+      "content": "This is a comment on the task",
+      "file_attachment": null,
+      "uids_to_notify": null,
+      "is_deleted": false,
+      "posted_at": "2024-01-15T11:30:00Z",
+      "reactions": null
+    },
+    "example_with_attachment": {
+      "id": "9AknU8AWtJyPsMQj",
+      "posted_uid": "12345678",
+      "content": "See attached document",
+      "file_attachment": {
+        "file_name": "document.pdf",
+        "file_type": "application/pdf",
+        "file_url": "https://s3.amazonaws.com/domorebetter/document.pdf",
+        "resource_type": "file",
+        "file_size": 1024000,
+        "upload_state": "completed"
+      },
+      "uids_to_notify": ["87654321"],
+      "is_deleted": false,
+      "posted_at": "2024-01-16T09:15:00Z",
+      "reactions": {"heart": ["12345678"]}
+    }
+  },
+  "user": {
+    "description": "User object (UserJSON in API)",
+    "example": {
+      "id": "12345678",
+      "email": "user@example.com",
+      "full_name": "John Doe",
+      "has_password": true,
+      "verification_status": "verified",
+      "mfa_enabled": false,
+      "token": null,
+      "is_premium": true,
+      "premium_status": "current_personal_plan",
+      "premium_until": "2025-01-01T00:00:00Z",
+      "free_trial_expires": null,
+      "has_started_a_trial": true,
+      "joined_at": "2020-06-15T08:00:00Z",
+      "is_deleted": false,
+      "deleted_at": null,
+      "business_account_id": null,
+      "date_format": 0,
+      "time_format": 0,
+      "sort_order": 0,
+      "theme_id": "11",
+      "start_day": 1,
+      "weekend_start_day": 6,
+      "next_week": 1,
+      "auto_reminder": 30,
+      "start_page": "today",
+      "inbox_project_id": "2331234567",
+      "lang": "en",
+      "tz_info": {
+        "timezone": "Europe/Paris",
+        "hours": 1,
+        "minutes": 0,
+        "is_dst": false,
+        "gmt_string": "+01:00"
+      },
+      "karma": 15000.5,
+      "karma_trend": "up",
+      "daily_goal": 5,
+      "weekly_goal": 25,
+      "days_off": [6, 7],
+      "is_celebrations_enabled": true,
+      "completed_count": 1500,
+      "completed_today": 3,
+      "share_limit": 25,
+      "features": {},
+      "feature_identifier": "abc123",
+      "joinable_workspace": null,
+      "onboarding_completed": true,
+      "onboarding_initiated": true,
+      "onboarding_started": true,
+      "onboarding_level": "pro",
+      "onboarding_persona": "tasks",
+      "onboarding_role": "ic",
+      "onboarding_team_mode": null,
+      "onboarding_use_cases": ["personal", "work"],
+      "getting_started_guide_projects": null,
+      "activated_user": true,
+      "has_magic_number": true,
+      "image_id": "avatar123",
+      "avatar_big": "https://dcff1xvirvpfp.cloudfront.net/avatar_big.jpg",
+      "avatar_medium": "https://dcff1xvirvpfp.cloudfront.net/avatar_medium.jpg",
+      "avatar_s640": "https://dcff1xvirvpfp.cloudfront.net/avatar_s640.jpg",
+      "avatar_small": "https://dcff1xvirvpfp.cloudfront.net/avatar_small.jpg",
+      "websocket_url": "wss://ws.todoist.com/ws"
+    }
+  },
+  "paginated_responses": {
+    "description": "All list endpoints return paginated responses",
+    "tasks": {
+      "results": [
+        {
+          "user_id": "12345678",
+          "id": "6X6WMMqgq2PWxjCX",
+          "project_id": "6XGgm6PHrGgMpCFX",
+          "section_id": null,
+          "parent_id": null,
+          "added_by_uid": null,
+          "assigned_by_uid": null,
+          "responsible_uid": null,
+          "labels": [],
+          "deadline": null,
+          "duration": null,
+          "checked": false,
+          "is_deleted": false,
+          "added_at": "2024-01-15T10:00:00Z",
+          "completed_at": null,
+          "completed_by_uid": null,
+          "updated_at": null,
+          "due": null,
+          "priority": 1,
+          "child_order": 0,
+          "content": "First task",
+          "description": "",
+          "note_count": 0,
+          "day_order": -1,
+          "is_collapsed": false
+        }
+      ],
+      "next_cursor": "14540000435w8hj8pXXwPQJJch.X9DBH8ya2Xenok55"
+    },
+    "projects": {
+      "results": [
+        {
+          "id": "6XGgm6PHrGgMpCFX",
+          "can_assign_tasks": true,
+          "child_order": 1,
+          "color": "charcoal",
+          "creator_uid": "12345678",
+          "created_at": "2024-01-01T00:00:00Z",
+          "is_archived": false,
+          "is_deleted": false,
+          "is_favorite": false,
+          "is_frozen": false,
+          "name": "My Project",
+          "updated_at": null,
+          "view_style": "list",
+          "default_order": 0,
+          "description": "",
+          "public_key": "",
+          "access": null,
+          "role": "owner",
+          "parent_id": null,
+          "inbox_project": false,
+          "is_collapsed": false,
+          "is_shared": false
+        }
+      ],
+      "next_cursor": null
+    },
+    "sections": {
+      "results": [
+        {
+          "id": "6fFPHV272WWh3gpW",
+          "user_id": "12345678",
+          "project_id": "6XGgm6PHrGgMpCFX",
+          "added_at": "2024-01-05T09:00:00Z",
+          "updated_at": null,
+          "archived_at": null,
+          "name": "In Progress",
+          "section_order": 1,
+          "is_archived": false,
+          "is_deleted": false,
+          "is_collapsed": false
+        }
+      ],
+      "next_cursor": null
+    },
+    "labels": {
+      "results": [
+        {
+          "id": "6XhkR5XTrGvMpJNg",
+          "name": "priority",
+          "color": "red",
+          "order": 1,
+          "is_favorite": false
+        }
+      ],
+      "next_cursor": null
+    },
+    "comments": {
+      "results": [
+        {
+          "id": "8ZjmT7ZVsIxOrLPi",
+          "posted_uid": "12345678",
+          "content": "A comment",
+          "file_attachment": null,
+          "uids_to_notify": null,
+          "is_deleted": false,
+          "posted_at": "2024-01-15T11:30:00Z",
+          "reactions": null
+        }
+      ],
+      "next_cursor": null
+    }
+  },
+  "request_bodies": {
+    "create_task": {
+      "content": "Buy milk",
+      "description": "Get 2% milk from the store",
+      "project_id": "6XGgm6PHrGgMpCFX",
+      "section_id": null,
+      "parent_id": null,
+      "labels": ["shopping"],
+      "priority": 2,
+      "due_string": "tomorrow at 10am",
+      "due_lang": "en",
+      "duration": 15,
+      "duration_unit": "minute"
+    },
+    "update_task": {
+      "content": "Buy groceries",
+      "priority": 3,
+      "labels": ["shopping", "urgent"]
+    },
+    "create_project": {
+      "name": "New Project",
+      "color": "berry_red",
+      "parent_id": null,
+      "is_favorite": false,
+      "view_style": "list"
+    },
+    "update_project": {
+      "name": "Updated Project Name",
+      "color": "blue",
+      "is_favorite": true
+    },
+    "create_section": {
+      "name": "New Section",
+      "project_id": "6XGgm6PHrGgMpCFX",
+      "order": 1
+    },
+    "update_section": {
+      "name": "Updated Section Name"
+    },
+    "create_label": {
+      "name": "new-label",
+      "color": "green",
+      "order": 5,
+      "is_favorite": false
+    },
+    "update_label": {
+      "name": "updated-label",
+      "color": "orange"
+    },
+    "create_comment": {
+      "content": "This is a new comment",
+      "task_id": "6X6WMMqgq2PWxjCX",
+      "attachment": null
+    },
+    "update_comment": {
+      "content": "Updated comment content"
+    }
+  },
+  "error_responses": {
+    "bad_request_400": {
+      "error": "Bad Request",
+      "error_code": 400,
+      "error_extra": {"field": "content", "reason": "Field is required"}
+    },
+    "unauthorized_401": {
+      "error": "Unauthorized",
+      "error_code": 401
+    },
+    "forbidden_403": {
+      "error": "Forbidden",
+      "error_code": 403
+    },
+    "not_found_404": {
+      "error": "Not Found",
+      "error_code": 404
+    },
+    "rate_limited_429": {
+      "error": "Too Many Requests",
+      "error_code": 429
+    }
+  }
+}

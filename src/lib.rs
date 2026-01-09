@@ -1,6 +1,6 @@
 //! # Todoist-api
 //!
-//! A Rust wrapper for the Todoist REST API v2.
+//! A Rust wrapper for the Todoist Unified API v1.
 //!
 //! ## Features
 //!
@@ -22,8 +22,8 @@
 //!     let todoist = TodoistWrapper::new("your-api-token".to_string());
 //!
 //!     // Get all tasks with error handling
-//!     match todoist.get_tasks().await {
-//!         Ok(tasks) => println!("Found {} tasks", tasks.len()),
+//!     match todoist.get_tasks(None, None).await {
+//!         Ok(response) => println!("Found {} tasks", response.results.len()),
 //!         Err(TodoistError::RateLimited { retry_after, message }) => {
 //!             println!("Rate limited: {} (retry after {} seconds)", message, retry_after.unwrap_or(0));
 //!         }
@@ -72,44 +72,61 @@ mod tests {
         // Test that all main types are properly exported
         let _task: Task = Task {
             id: "test".to_string(),
+            user_id: "user123".to_string(),
             content: "test".to_string(),
             description: "test".to_string(),
             project_id: "test".to_string(),
             section_id: None,
             parent_id: None,
-            order: 1,
-            priority: 1,
-            is_completed: false,
+            added_by_uid: None,
+            assigned_by_uid: None,
+            responsible_uid: None,
             labels: vec![],
-            created_at: "2024-01-01T00:00:00Z".to_string(),
-            due: None,
             deadline: None,
             duration: None,
-            assignee_id: None,
-            url: "https://todoist.com".to_string(),
-            comment_count: 0,
+            checked: false,
+            is_deleted: false,
+            added_at: "2024-01-01T00:00:00Z".to_string(),
+            completed_at: None,
+            completed_by_uid: None,
+            updated_at: None,
+            due: None,
+            priority: 1,
+            child_order: 0,
+            note_count: 0,
+            day_order: 0,
+            is_collapsed: false,
         };
 
         let _project: Project = Project {
             id: "test".to_string(),
             name: "test".to_string(),
-            comment_count: 0,
-            order: 1,
             color: "blue".to_string(),
             is_shared: false,
             is_favorite: false,
-            is_inbox_project: false,
-            is_team_inbox: false,
+            inbox_project: false,
             view_style: "list".to_string(),
-            url: "https://todoist.com".to_string(),
             parent_id: None,
+            child_order: 0,
+            creator_uid: None,
+            created_at: None,
+            updated_at: None,
+            is_archived: false,
+            is_deleted: false,
+            is_frozen: false,
+            is_collapsed: false,
+            can_assign_tasks: false,
+            default_order: 0,
+            description: String::new(),
+            public_key: String::new(),
+            role: None,
         };
 
         let _label: Label = Label {
             id: "test".to_string(),
             name: "test".to_string(),
             color: "red".to_string(),
-            order: 1,
+            order: Some(1),
             is_favorite: false,
         };
 

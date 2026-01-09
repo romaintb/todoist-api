@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.1] - 2026-01-09
+
+### **Complete API Migration**
+
+This is a major release with comprehensive changes due to Todoist deprecating REST API v2. The entire library has been rebuilt to wrap the new Todoist Unified API v1.
+
+**⚠️ This release contains breaking changes across all APIs.** If you're upgrading from 0.x, expect to refactor your code.
+
+### Breaking Changes
+- **Complete rewrite**: All public APIs have changed to align with the new Unified API v1 structure
+- **Model changes**: Data structures refactored to match Unified API response formats
+- **Pagination model**: All list endpoints now return `PaginatedResponse<T>` with cursor-based pagination
+- **Method signatures**: All wrapper methods adjusted for new API parameters and response types
+
+### Added
+- Full support for Todoist Unified API v1
+- All models updated with new fields and structure from the new API
+- Enhanced compatibility with latest Todoist features
+
+### Removed
+- All support for deprecated Todoist REST API v2
+
 ## [0.3.1] - 2025-12-23
 
 ### Fixed

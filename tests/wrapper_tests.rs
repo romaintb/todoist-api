@@ -228,22 +228,30 @@ fn test_comment_filter_args_builder() {
 fn test_serde_serialization() {
     let task = Task {
         id: "123".to_string(),
+        user_id: "user123".to_string(),
         content: "Test task".to_string(),
         description: "Test description".to_string(),
         project_id: "proj_123".to_string(),
         section_id: None,
         parent_id: None,
-        order: 1,
-        priority: 3,
-        is_completed: false,
+        added_by_uid: None,
+        assigned_by_uid: None,
+        responsible_uid: None,
         labels: vec!["test".to_string()],
-        created_at: "2024-01-01T00:00:00Z".to_string(),
-        due: None,
         deadline: None,
         duration: None,
-        assignee_id: None,
-        url: "https://todoist.com".to_string(),
-        comment_count: 0,
+        checked: false,
+        is_deleted: false,
+        added_at: "2024-01-01T00:00:00Z".to_string(),
+        completed_at: None,
+        completed_by_uid: None,
+        updated_at: None,
+        due: None,
+        priority: 3,
+        child_order: 0,
+        note_count: 0,
+        day_order: 0,
+        is_collapsed: false,
     };
 
     // Test that we can serialize to JSON
@@ -261,60 +269,78 @@ fn test_serde_serialization() {
 
 #[test]
 fn test_serde_deserialization() {
+    // Test deserialization from API format with user_id
     let json = r#"{
         "id": "456",
+        "user_id": "user456",
         "content": "Deserialized task",
         "description": "Test deserialization",
         "project_id": "proj_456",
         "section_id": null,
         "parent_id": null,
-        "order": 2,
-        "priority": 4,
-        "is_completed": true,
+        "added_by_uid": null,
+        "assigned_by_uid": null,
+        "responsible_uid": null,
         "labels": ["deserialized", "test"],
-        "created_at": "2024-01-02T00:00:00Z",
-        "due": null,
         "deadline": null,
         "duration": null,
-        "assignee_id": null,
-        "url": "https://todoist.com",
-        "comment_count": 1
+        "checked": true,
+        "is_deleted": false,
+        "added_at": "2024-01-02T00:00:00Z",
+        "completed_at": "2024-01-02T10:00:00Z",
+        "completed_by_uid": "user456",
+        "updated_at": null,
+        "due": null,
+        "priority": 4,
+        "child_order": 0,
+        "note_count": 1,
+        "day_order": 0,
+        "is_collapsed": false
     }"#;
 
     let task: Task = serde_json::from_str(json).unwrap();
     assert_eq!(task.id, "456");
+    assert_eq!(task.user_id, "user456");
     assert_eq!(task.content, "Deserialized task");
     assert_eq!(task.description, "Test deserialization");
     assert_eq!(task.project_id, "proj_456");
-    assert_eq!(task.order, 2);
     assert_eq!(task.priority, 4);
-    assert!(task.is_completed);
     assert_eq!(task.labels.len(), 2);
     assert!(task.labels.contains(&"deserialized".to_string()));
     assert!(task.labels.contains(&"test".to_string()));
-    assert_eq!(task.comment_count, 1);
+    assert_eq!(task.note_count, 1);
+    assert!(task.checked);
+    assert_eq!(task.completed_at, Some("2024-01-02T10:00:00Z".to_string()));
 }
 
 #[test]
 fn test_clone_functionality() {
     let original_task = Task {
         id: "789".to_string(),
+        user_id: "user789".to_string(),
         content: "Original task".to_string(),
         description: "Original description".to_string(),
         project_id: "proj_789".to_string(),
         section_id: None,
         parent_id: None,
-        order: 3,
-        priority: 2,
-        is_completed: false,
+        added_by_uid: None,
+        assigned_by_uid: None,
+        responsible_uid: None,
         labels: vec!["original".to_string()],
-        created_at: "2024-01-03T00:00:00Z".to_string(),
-        due: None,
         deadline: None,
         duration: None,
-        assignee_id: None,
-        url: "https://todoist.com".to_string(),
-        comment_count: 0,
+        checked: false,
+        is_deleted: false,
+        added_at: "2024-01-03T00:00:00Z".to_string(),
+        completed_at: None,
+        completed_by_uid: None,
+        updated_at: None,
+        due: None,
+        priority: 2,
+        child_order: 0,
+        note_count: 0,
+        day_order: 0,
+        is_collapsed: false,
     };
 
     let cloned_task = original_task.clone();
@@ -323,34 +349,40 @@ fn test_clone_functionality() {
     assert_eq!(cloned_task.content, original_task.content);
     assert_eq!(cloned_task.description, original_task.description);
     assert_eq!(cloned_task.project_id, original_task.project_id);
-    assert_eq!(cloned_task.order, original_task.order);
     assert_eq!(cloned_task.priority, original_task.priority);
-    assert_eq!(cloned_task.is_completed, original_task.is_completed);
     assert_eq!(cloned_task.labels, original_task.labels);
-    assert_eq!(cloned_task.created_at, original_task.created_at);
-    assert_eq!(cloned_task.comment_count, original_task.comment_count);
+    assert_eq!(cloned_task.added_at, original_task.added_at);
+    assert_eq!(cloned_task.note_count, original_task.note_count);
 }
 
 #[test]
 fn test_debug_formatting() {
     let task = Task {
         id: "debug_123".to_string(),
+        user_id: "user_debug".to_string(),
         content: "Debug task".to_string(),
         description: "Debug description".to_string(),
         project_id: "proj_debug".to_string(),
         section_id: None,
         parent_id: None,
-        order: 1,
-        priority: 1,
-        is_completed: false,
+        added_by_uid: None,
+        assigned_by_uid: None,
+        responsible_uid: None,
         labels: vec!["debug".to_string()],
-        created_at: "2024-01-01T00:00:00Z".to_string(),
-        due: None,
         deadline: None,
         duration: None,
-        assignee_id: None,
-        url: "https://todoist.com".to_string(),
-        comment_count: 0,
+        checked: false,
+        is_deleted: false,
+        added_at: "2024-01-01T00:00:00Z".to_string(),
+        completed_at: None,
+        completed_by_uid: None,
+        updated_at: None,
+        due: None,
+        priority: 1,
+        child_order: 0,
+        note_count: 0,
+        day_order: 0,
+        is_collapsed: false,
     };
 
     let debug_output = format!("{:?}", task);

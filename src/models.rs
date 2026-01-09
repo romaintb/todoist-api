@@ -1,72 +1,157 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Todoist Task model
+/// Todoist Task model (API v1)
+/// Represents a task item as returned by the Unified API v1 (ItemSyncView)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Task {
     pub id: String,
+    /// User ID of the task creator (API returns this as `user_id`)
+    #[serde(alias = "creator_id")]
+    pub user_id: String,
     pub content: String,
     pub description: String,
     pub project_id: String,
     pub section_id: Option<String>,
     pub parent_id: Option<String>,
-    pub order: i32,
-    pub priority: i32,
-    pub is_completed: bool,
+    pub added_by_uid: Option<String>,
+    pub assigned_by_uid: Option<String>,
+    pub responsible_uid: Option<String>,
     pub labels: Vec<String>,
-    pub created_at: String,
-    pub due: Option<Due>,
     pub deadline: Option<Deadline>,
     pub duration: Option<Duration>,
-    pub assignee_id: Option<String>,
-    pub url: String,
-    pub comment_count: i32,
+    /// Whether the task is completed
+    #[serde(default)]
+    pub checked: bool,
+    /// Whether the task is deleted
+    #[serde(default)]
+    pub is_deleted: bool,
+    pub added_at: String,
+    /// When the task was completed (ISO 8601)
+    pub completed_at: Option<String>,
+    /// User ID who completed the task
+    pub completed_by_uid: Option<String>,
+    pub updated_at: Option<String>,
+    pub due: Option<Due>,
+    pub priority: i32,
+    pub child_order: i32,
+    /// Deprecated: always returns 0
+    #[serde(default)]
+    pub note_count: i32,
+    pub day_order: i32,
+    pub is_collapsed: bool,
 }
 
-/// Todoist Project model
+/// Todoist Project model (API v1)
+/// Represents a project as returned by the Unified API v1 (PersonalProjectSyncView)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Project {
     pub id: String,
     pub name: String,
-    pub comment_count: i32,
-    pub order: i32,
     pub color: String,
+    /// Whether the project is shared with other users
+    #[serde(alias = "shared")]
     pub is_shared: bool,
     pub is_favorite: bool,
-    pub is_inbox_project: bool,
-    pub is_team_inbox: bool,
+    /// Whether this is the inbox project
+    #[serde(alias = "is_inbox_project")]
+    pub inbox_project: bool,
     pub view_style: String,
-    pub url: String,
     pub parent_id: Option<String>,
+    /// Child order in the project list
+    #[serde(default)]
+    pub child_order: i32,
+    /// User ID of the project creator
+    pub creator_uid: Option<String>,
+    /// When the project was created (ISO 8601)
+    pub created_at: Option<String>,
+    /// When the project was last updated (ISO 8601)
+    pub updated_at: Option<String>,
+    /// Whether the project is archived
+    #[serde(default)]
+    pub is_archived: bool,
+    /// Whether the project is deleted
+    #[serde(default)]
+    pub is_deleted: bool,
+    /// Whether the project is frozen (suspended)
+    #[serde(default)]
+    pub is_frozen: bool,
+    /// Whether the project is collapsed in the UI
+    #[serde(default)]
+    pub is_collapsed: bool,
+    /// Whether tasks can be assigned to collaborators
+    #[serde(default)]
+    pub can_assign_tasks: bool,
+    /// Default order for tasks
+    #[serde(default)]
+    pub default_order: i32,
+    /// Project description
+    #[serde(default)]
+    pub description: String,
+    /// Public sharing key
+    #[serde(default)]
+    pub public_key: String,
+    /// User's role in the project (owner, editor, viewer)
+    pub role: Option<String>,
 }
 
-/// Todoist Label model
+/// Todoist Label model (API v1)
+/// Represents a label as returned by the Unified API v1 (LabelRestView)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Label {
     pub id: String,
     pub name: String,
     pub color: String,
-    pub order: i32,
+    /// Order in the label list (can be null for some labels)
+    pub order: Option<i32>,
     pub is_favorite: bool,
 }
 
-/// Todoist Section model
+/// Todoist Section model (API v1)
+/// Represents a section as returned by the Unified API v1 (SectionSyncView)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Section {
     pub id: String,
-    pub name: String,
+    /// User ID of the section creator (API returns this as `user_id`)
+    #[serde(alias = "creator_id")]
+    pub user_id: String,
     pub project_id: String,
-    pub order: i32,
+    pub added_at: String,
+    pub updated_at: Option<String>,
+    pub archived_at: Option<String>,
+    pub name: String,
+    pub section_order: i32,
+    pub is_archived: bool,
+    /// Whether the section is deleted
+    #[serde(default)]
+    pub is_deleted: bool,
+    pub is_collapsed: bool,
 }
 
-/// Todoist Comment model
+/// Todoist Comment model (API v1)
+/// Represents a comment as returned by the Unified API v1 (NoteSyncView)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Comment {
     pub id: String,
+    #[serde(default)]
     pub content: String,
-    pub posted_at: String,
-    pub attachment: Option<Attachment>,
+    pub posted_at: Option<String>,
+    pub posted_uid: Option<String>,
+    /// File attachment (API returns this as `file_attachment`)
+    #[serde(alias = "attachment")]
+    pub file_attachment: Option<Attachment>,
+    /// User IDs to notify about this comment
+    pub uids_to_notify: Option<Vec<String>>,
+    /// Whether the comment is deleted
+    #[serde(default)]
+    pub is_deleted: bool,
+    /// Reactions on the comment (emoji -> list of user IDs)
+    pub reactions: Option<serde_json::Value>,
+    /// Project ID (only present in request context, not API response)
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub project_id: Option<String>,
+    /// Task ID (only present in request context, not API response)
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub task_id: Option<String>,
 }
 
@@ -90,7 +175,8 @@ pub struct User {
     pub is_business_account: bool,
 }
 
-/// Todoist Due date model
+/// Todoist Due date model (API v1)
+/// Represents a due date as returned by the Unified API v1
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Due {
     pub string: String,
@@ -98,12 +184,17 @@ pub struct Due {
     pub is_recurring: bool,
     pub datetime: Option<String>,
     pub timezone: Option<String>,
+    /// Language of the due string
+    pub lang: Option<String>,
 }
 
-/// Todoist Deadline model
+/// Todoist Deadline model (API v1)
+/// Represents a deadline as returned by the Unified API v1
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Deadline {
     pub date: String,
+    /// Language of the deadline string
+    pub lang: Option<String>,
 }
 
 /// Todoist Duration model
@@ -111,6 +202,15 @@ pub struct Deadline {
 pub struct Duration {
     pub amount: i32,
     pub unit: String, // "minute", "hour", "day"
+}
+
+/// Paginated response wrapper for API v1
+/// All list endpoints in API v1 return results in this format
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PaginatedResponse<T> {
+    pub results: Vec<T>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
 }
 
 /// Task creation arguments
@@ -144,8 +244,6 @@ pub struct CreateTaskArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_lang: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub assignee_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_unit: Option<String>,
@@ -175,8 +273,6 @@ pub struct UpdateTaskArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_lang: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub assignee_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_unit: Option<String>,
@@ -195,7 +291,6 @@ impl UpdateTaskArgs {
             || self.due_lang.is_some()
             || self.deadline_date.is_some()
             || self.deadline_lang.is_some()
-            || self.assignee_id.is_some()
             || self.duration.is_some()
             || self.duration_unit.is_some()
     }
@@ -345,6 +440,24 @@ pub struct CommentFilterArgs {
     pub task_id: Option<String>,
     pub project_id: Option<String>,
     pub limit: Option<i32>,
+    pub cursor: Option<String>,
+}
+
+/// Completed tasks filter arguments
+/// Used for querying completed tasks by completion date or due date
+#[derive(Debug, Serialize, Default)]
+pub struct CompletedTasksFilterArgs {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub section_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>, // ISO 8601 datetime
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub until: Option<String>, // ISO 8601 datetime
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
 }
 

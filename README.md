@@ -20,7 +20,7 @@ A comprehensive Rust wrapper for the Todoist Unified API v1, providing a clean a
 - **Advanced filtering** - Filter tasks, projects, and labels with pagination
 - **Type safety** - Full Rust type safety with Serde serialization
 - **Error handling** - Comprehensive error handling with specific error types and rate limiting support
-- **Well documented** - Extensive documentation
+- **Well-documented** - Extensive documentation
 
 ## Installation
 
@@ -28,7 +28,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-todoist-api = "1.0.0"
+todoist-api = "1.0.0-alpha.1"
 ```
 
 ## Quick Start

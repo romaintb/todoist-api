@@ -18,6 +18,7 @@ This is a major release with comprehensive changes due to Todoist deprecating RE
 ### Breaking Changes
 - **Complete rewrite**: All public APIs have changed to align with the new Unified API v1 structure
 - **Model changes**: Data structures refactored to match Unified API response formats
+- **Pagination model**: All list endpoints now return `PaginatedResponse<T>` with cursor-based pagination
 - **Method signatures**: All wrapper methods adjusted for new API parameters and response types
 
 ### Added

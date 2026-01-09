@@ -521,7 +521,7 @@ async fn test_get_tasks_for_project() {
 
     let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
 
-    let result = todoist.get_tasks_for_project("proj_123").await;
+    let result = todoist.get_tasks_for_project("proj_123", None, None).await;
     assert!(result.is_ok());
     let response = result.unwrap();
     assert_eq!(response.results.len(), 1);

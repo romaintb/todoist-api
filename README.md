@@ -168,7 +168,8 @@ if let Some(cursor) = response.next_cursor {
 let task = todoist.get_task("task_id").await?;
 
 // Get tasks for a specific project (paginated)
-let response = todoist.get_tasks_for_project("project_id").await?;
+let response = todoist.get_tasks_for_project("project_id", Some(10), None).await?;
+// Use response.next_cursor for pagination
 
 // Get tasks by filter query (paginated)
 let filter_args = TaskFilterArgs {

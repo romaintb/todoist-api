@@ -324,7 +324,12 @@ impl TodoistWrapper {
     }
 
     /// Get tasks for a specific project (paginated)
-    pub async fn get_tasks_for_project(&self, project_id: &str, limit: Option<i32>, cursor: Option<String>) -> TodoistResult<PaginatedResponse<Task>> {
+    pub async fn get_tasks_for_project(
+        &self,
+        project_id: &str,
+        limit: Option<i32>,
+        cursor: Option<String>,
+    ) -> TodoistResult<PaginatedResponse<Task>> {
         let mut query_params = vec![("project_id", project_id.to_string())];
         if let Some(l) = limit {
             query_params.push(("limit", l.to_string()));

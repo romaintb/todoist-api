@@ -250,15 +250,16 @@ for project in response.results {
 // Get a specific project
 let project = todoist.get_project("project_id").await?;
 
-// Get projects with filtering (returns a plain Vec, not paginated)
+// Get projects with filtering (paginated)
 let filter_args = ProjectFilterArgs {
     limit: Some(20),
     cursor: None,
 };
-let projects = todoist.get_projects_filtered(&filter_args).await?;
-for project in projects {
+let response = todoist.get_projects_filtered(&filter_args).await?;
+for project in response.results {
     println!("Project: {}", project.name);
 }
+// Use response.next_cursor for pagination
 
 // Create a new project
 let create_args = CreateProjectArgs {
@@ -295,15 +296,16 @@ for label in response.results {
 // Get a specific label
 let label = todoist.get_label("label_id").await?;
 
-// Get labels with filtering (returns a plain Vec, not paginated)
+// Get labels with filtering (paginated)
 let filter_args = LabelFilterArgs {
     limit: Some(50),
     cursor: None,
 };
-let labels = todoist.get_labels_filtered(&filter_args).await?;
-for label in labels {
+let response = todoist.get_labels_filtered(&filter_args).await?;
+for label in response.results {
     println!("Label: {}", label.name);
 }
+// Use response.next_cursor for pagination
 
 // Create a new label
 let create_args = CreateLabelArgs {
@@ -368,26 +370,28 @@ todoist.delete_section("section_id").await?;
 ### Comment Operations
 
 ```rust
-// Get all comments (returns a plain Vec, not paginated)
-let comments = todoist.get_comments().await?;
-for comment in comments {
+// Get all comments (paginated)
+let response = todoist.get_comments().await?;
+for comment in response.results {
     println!("Comment: {}", comment.content);
 }
+// Use response.next_cursor for pagination
 
 // Get a specific comment
 let comment = todoist.get_comment("comment_id").await?;
 
-// Get comments for a task (returns a plain Vec, not paginated)
+// Get comments for a task (paginated)
 let filter_args = CommentFilterArgs {
     task_id: Some("task_id".to_string()),
     project_id: None,
     limit: Some(20),
     cursor: None,
 };
-let task_comments = todoist.get_comments_filtered(&filter_args).await?;
-for comment in task_comments {
+let response = todoist.get_comments_filtered(&filter_args).await?;
+for comment in response.results {
     println!("Task comment: {}", comment.content);
 }
+// Use response.next_cursor for pagination
 
 // Create a new comment
 let create_args = CreateCommentArgs {
@@ -445,10 +449,10 @@ For advanced querying and pagination:
 
 - `TaskFilterArgs` - Task filtering and pagination
 - `CompletedTasksFilterArgs` - Completed tasks filtering with date ranges
-- `ProjectFilterArgs` - Project filtering parameters (returns `Vec<Project>`)
-- `LabelFilterArgs` - Label filtering parameters (returns `Vec<Label>`)
+- `ProjectFilterArgs` - Project filtering and pagination
+- `LabelFilterArgs` - Label filtering and pagination
 - `SectionFilterArgs` - Section filtering and pagination
-- `CommentFilterArgs` - Comment filtering parameters (returns `Vec<Comment>`)
+- `CommentFilterArgs` - Comment filtering and pagination
 
 ## Advanced Error Handling
 

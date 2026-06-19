@@ -263,7 +263,7 @@ impl TodoistWrapper {
     }
 
     /// Get projects with filtering and pagination
-    pub async fn get_projects_filtered(&self, args: &ProjectFilterArgs) -> TodoistResult<Vec<Project>> {
+    pub async fn get_projects_filtered(&self, args: &ProjectFilterArgs) -> TodoistResult<PaginatedResponse<Project>> {
         let mut query_params = Vec::new();
 
         if let Some(limit) = args.limit {
@@ -273,7 +273,7 @@ impl TodoistWrapper {
             query_params.push(("cursor", cursor.clone()));
         }
 
-        self.make_get_request_with_params("/projects", &query_params).await
+        self.make_get_request_paginated("/projects", &query_params).await
     }
 
     /// Get a specific project by ID
@@ -477,7 +477,7 @@ impl TodoistWrapper {
     }
 
     /// Get labels with filtering and pagination
-    pub async fn get_labels_filtered(&self, args: &LabelFilterArgs) -> TodoistResult<Vec<Label>> {
+    pub async fn get_labels_filtered(&self, args: &LabelFilterArgs) -> TodoistResult<PaginatedResponse<Label>> {
         let mut query_params = Vec::new();
 
         if let Some(limit) = args.limit {
@@ -487,7 +487,7 @@ impl TodoistWrapper {
             query_params.push(("cursor", cursor.clone()));
         }
 
-        self.make_get_request_with_params("/labels", &query_params).await
+        self.make_get_request_paginated("/labels", &query_params).await
     }
 
     /// Get a specific label by ID
@@ -579,13 +579,14 @@ impl TodoistWrapper {
 
     // ===== COMMENT OPERATIONS =====
 
-    /// Get all comments
-    pub async fn get_comments(&self) -> TodoistResult<Vec<Comment>> {
-        self.make_get_request("/comments").await
+    /// Get all comments (paginated)
+    pub async fn get_comments(&self) -> TodoistResult<PaginatedResponse<Comment>> {
+        self.make_get_request_paginated("/comments", &[] as &[(&str, String)])
+            .await
     }
 
     /// Get comments with filtering and pagination
-    pub async fn get_comments_filtered(&self, args: &CommentFilterArgs) -> TodoistResult<Vec<Comment>> {
+    pub async fn get_comments_filtered(&self, args: &CommentFilterArgs) -> TodoistResult<PaginatedResponse<Comment>> {
         let mut query_params = Vec::new();
 
         if let Some(task_id) = &args.task_id {
@@ -601,7 +602,7 @@ impl TodoistWrapper {
             query_params.push(("cursor", cursor.clone()));
         }
 
-        self.make_get_request_with_params("/comments", &query_params).await
+        self.make_get_request_paginated("/comments", &query_params).await
     }
 
     /// Get a specific comment by ID

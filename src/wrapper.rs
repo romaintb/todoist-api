@@ -359,7 +359,7 @@ impl TodoistWrapper {
             query_params.push(("cursor", cursor.clone()));
         }
 
-        self.make_get_request_paginated("/tasks", &query_params).await
+        self.make_get_request_paginated("/tasks/filter", &query_params).await
     }
 
     /// Create a new task

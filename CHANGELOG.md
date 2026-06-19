@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.2] - 2026-06-19
+
+### Fixed
+- `get_tasks_by_filter` now correctly calls `/tasks/filter` instead of `/tasks`, preventing Todoist from returning all tasks.
+- Updated dependencies to latest `reqwest` and `wiremock`.
+
 ## [1.0.0-alpha.1] - 2026-01-09
 
 ### **Complete API Migration**

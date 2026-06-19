@@ -1,6 +1,6 @@
 [package]
 name = "todoist-api"
-version = "1.0.0-alpha.1"
+version = "1.0.0-alpha.2"
 edition = "2021"
 description = "A Rust wrapper for the Todoist Unified API v1"
 license = "MIT"

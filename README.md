@@ -7,7 +7,7 @@
 [![Rust Version](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 [![Todoist API](https://img.shields.io/badge/Todoist-API%20v1-red.svg)](https://developer.todoist.com/api/v1)
 
-A comprehensive Rust wrapper for the Todoist Unified API v1, providing a clean and ergonomic interface for managing tasks, projects, labels, sections, and comments with cursor-based pagination.
+A comprehensive Rust wrapper for the Todoist Unified API v1, providing a clean and ergonomic interface for managing tasks, projects, labels, sections, and comments.
 
 ## Features
 
@@ -17,7 +17,7 @@ A comprehensive Rust wrapper for the Todoist Unified API v1, providing a clean a
 - **Label support** - Full label operations with filtering
 - **Section management** - Organize projects with sections
 - **Comment system** - Add and manage comments on tasks and projects
-- **Advanced filtering** - Filter tasks, projects, and labels with pagination
+- **Advanced filtering** - Filter tasks, projects, labels, sections, and comments
 - **Type safety** - Full Rust type safety with Serde serialization
 - **Error handling** - Comprehensive error handling with specific error types and rate limiting support
 - **Well-documented** - Extensive documentation
@@ -250,12 +250,15 @@ for project in response.results {
 // Get a specific project
 let project = todoist.get_project("project_id").await?;
 
-// Get projects with filtering
+// Get projects with filtering (returns a plain Vec, not paginated)
 let filter_args = ProjectFilterArgs {
     limit: Some(20),
     cursor: None,
 };
 let projects = todoist.get_projects_filtered(&filter_args).await?;
+for project in projects {
+    println!("Project: {}", project.name);
+}
 
 // Create a new project
 let create_args = CreateProjectArgs {
@@ -292,12 +295,15 @@ for label in response.results {
 // Get a specific label
 let label = todoist.get_label("label_id").await?;
 
-// Get labels with filtering
+// Get labels with filtering (returns a plain Vec, not paginated)
 let filter_args = LabelFilterArgs {
     limit: Some(50),
     cursor: None,
 };
 let labels = todoist.get_labels_filtered(&filter_args).await?;
+for label in labels {
+    println!("Label: {}", label.name);
+}
 
 // Create a new label
 let create_args = CreateLabelArgs {
@@ -362,13 +368,16 @@ todoist.delete_section("section_id").await?;
 ### Comment Operations
 
 ```rust
-// Get all comments
+// Get all comments (returns a plain Vec, not paginated)
 let comments = todoist.get_comments().await?;
+for comment in comments {
+    println!("Comment: {}", comment.content);
+}
 
 // Get a specific comment
 let comment = todoist.get_comment("comment_id").await?;
 
-// Get comments for a task
+// Get comments for a task (returns a plain Vec, not paginated)
 let filter_args = CommentFilterArgs {
     task_id: Some("task_id".to_string()),
     project_id: None,
@@ -376,6 +385,9 @@ let filter_args = CommentFilterArgs {
     cursor: None,
 };
 let task_comments = todoist.get_comments_filtered(&filter_args).await?;
+for comment in task_comments {
+    println!("Task comment: {}", comment.content);
+}
 
 // Create a new comment
 let create_args = CreateCommentArgs {
@@ -433,10 +445,10 @@ For advanced querying and pagination:
 
 - `TaskFilterArgs` - Task filtering and pagination
 - `CompletedTasksFilterArgs` - Completed tasks filtering with date ranges
-- `ProjectFilterArgs` - Project filtering and pagination
-- `LabelFilterArgs` - Label filtering and pagination
+- `ProjectFilterArgs` - Project filtering parameters (returns `Vec<Project>`)
+- `LabelFilterArgs` - Label filtering parameters (returns `Vec<Label>`)
 - `SectionFilterArgs` - Section filtering and pagination
-- `CommentFilterArgs` - Comment filtering and pagination
+- `CommentFilterArgs` - Comment filtering parameters (returns `Vec<Comment>`)
 
 ## Advanced Error Handling
 

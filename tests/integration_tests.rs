@@ -533,7 +533,7 @@ async fn test_get_tasks_by_filter() {
     let mock_server = MockServer::start().await;
 
     Mock::given(method("GET"))
-        .and(path("/tasks"))
+        .and(path("/tasks/filter"))
         .and(query_param("query", "today"))
         .and(query_param("lang", "en"))
         .and(query_param("limit", "20"))

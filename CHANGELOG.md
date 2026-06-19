@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+- **Consistent pagination**: `get_projects_filtered`, `get_labels_filtered`, `get_comments`, and `get_comments_filtered` now return `PaginatedResponse<T>` instead of `Vec<T>`, matching all other list endpoints.
+
 ## [1.0.0-alpha.2] - 2026-06-19
 
 ### Fixed

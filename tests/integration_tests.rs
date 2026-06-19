@@ -216,17 +216,20 @@ async fn test_get_projects_filtered() {
     Mock::given(method("GET"))
         .and(path("/projects"))
         .and(query_param("limit", "5"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            {
-                "id": "proj_1",
-                "name": "Project 1",
-                "color": "blue",
-                "shared": false,
-                "is_favorite": false,
-                "is_inbox_project": false,
-                "view_style": "list"
-            }
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "proj_1",
+                    "name": "Project 1",
+                    "color": "blue",
+                    "shared": false,
+                    "is_favorite": false,
+                    "is_inbox_project": false,
+                    "view_style": "list"
+                }
+            ],
+            "next_cursor": null
+        })))
         .mount(&mock_server)
         .await;
 
@@ -239,9 +242,10 @@ async fn test_get_projects_filtered() {
 
     let result = todoist.get_projects_filtered(&args).await;
     assert!(result.is_ok());
-    let projects = result.unwrap();
-    assert_eq!(projects.len(), 1);
-    assert_eq!(projects[0].id, "proj_1");
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].id, "proj_1");
+    assert!(response.next_cursor.is_none());
 }
 
 // ===== TASK OPERATIONS =====
@@ -759,15 +763,18 @@ async fn test_get_labels_filtered() {
     Mock::given(method("GET"))
         .and(path("/labels"))
         .and(query_param("limit", "10"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            {
-                "id": "label_1",
-                "name": "Label 1",
-                "color": "red",
-                "order": 1,
-                "is_favorite": false
-            }
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "label_1",
+                    "name": "Label 1",
+                    "color": "red",
+                    "order": 1,
+                    "is_favorite": false
+                }
+            ],
+            "next_cursor": null
+        })))
         .mount(&mock_server)
         .await;
 
@@ -780,9 +787,10 @@ async fn test_get_labels_filtered() {
 
     let result = todoist.get_labels_filtered(&args).await;
     assert!(result.is_ok());
-    let labels = result.unwrap();
-    assert_eq!(labels.len(), 1);
-    assert_eq!(labels[0].id, "label_1");
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].id, "label_1");
+    assert!(response.next_cursor.is_none());
 }
 
 // ===== SECTION OPERATIONS =====
@@ -987,16 +995,19 @@ async fn test_get_comments() {
 
     Mock::given(method("GET"))
         .and(path("/comments"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            {
-                "id": "comment_1",
-                "content": "Test comment",
-                "posted_at": "2024-01-01T00:00:00Z",
-                "attachment": null,
-                "project_id": null,
-                "task_id": "task_1"
-            }
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "comment_1",
+                    "content": "Test comment",
+                    "posted_at": "2024-01-01T00:00:00Z",
+                    "attachment": null,
+                    "project_id": null,
+                    "task_id": "task_1"
+                }
+            ],
+            "next_cursor": null
+        })))
         .mount(&mock_server)
         .await;
 
@@ -1004,9 +1015,10 @@ async fn test_get_comments() {
 
     let result = todoist.get_comments().await;
     assert!(result.is_ok());
-    let comments = result.unwrap();
-    assert_eq!(comments.len(), 1);
-    assert_eq!(comments[0].id, "comment_1");
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].id, "comment_1");
+    assert!(response.next_cursor.is_none());
 }
 
 #[tokio::test]
@@ -1120,16 +1132,19 @@ async fn test_get_comments_filtered() {
     Mock::given(method("GET"))
         .and(path("/comments"))
         .and(query_param("task_id", "task_123"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            {
-                "id": "comment_1",
-                "content": "Task comment",
-                "posted_at": "2024-01-01T00:00:00Z",
-                "attachment": null,
-                "project_id": null,
-                "task_id": "task_123"
-            }
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [
+                {
+                    "id": "comment_1",
+                    "content": "Task comment",
+                    "posted_at": "2024-01-01T00:00:00Z",
+                    "attachment": null,
+                    "project_id": null,
+                    "task_id": "task_123"
+                }
+            ],
+            "next_cursor": null
+        })))
         .mount(&mock_server)
         .await;
 
@@ -1144,9 +1159,10 @@ async fn test_get_comments_filtered() {
 
     let result = todoist.get_comments_filtered(&args).await;
     assert!(result.is_ok());
-    let comments = result.unwrap();
-    assert_eq!(comments.len(), 1);
-    assert_eq!(comments[0].task_id, Some("task_123".to_string()));
+    let response = result.unwrap();
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].task_id, Some("task_123".to_string()));
+    assert!(response.next_cursor.is_none());
 }
 
 // ===== ERROR HANDLING TESTS =====

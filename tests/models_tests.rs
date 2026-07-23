@@ -1,6 +1,27 @@
 use todoist_api::*;
 
 #[test]
+fn test_project_deserialization_with_missing_inbox_project() {
+    // Regression: API docs state inbox_project is only sent when true
+    let json = r#"{
+        "id": "6XGgm6PHrGgMpCFX",
+        "name": "My Project",
+        "color": "charcoal",
+        "is_shared": false,
+        "is_favorite": false,
+        "view_style": "list",
+        "parent_id": null,
+        "creator_uid": null,
+        "created_at": null,
+        "updated_at": null,
+        "role": null
+    }"#;
+
+    let project: Project = serde_json::from_str(json).unwrap();
+    assert!(!project.inbox_project);
+}
+
+#[test]
 fn test_task_creation() {
     let task = Task {
         id: "123".to_string(),

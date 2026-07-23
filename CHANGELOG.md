@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0-alpha.3] - 2026-07-23
 
 ### Breaking Changes
 - **Consistent pagination**: `get_projects_filtered`, `get_labels_filtered`, `get_comments`, and `get_comments_filtered` now return `PaginatedResponse<T>` instead of `Vec<T>`, matching all other list endpoints.
+
+### Fixed
+- `Project.inbox_project` now defaults to `false` when omitted, matching the documented API behavior ("true or otherwise this property is not sent"). Fixes parse failures on project fetch.
 
 ## [1.0.0-alpha.2] - 2026-06-19
 

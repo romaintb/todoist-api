@@ -28,7 +28,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-todoist-api = "1.0.0-alpha.1"
+todoist-api = "1.0.0-alpha.3"
 ```
 
 ## Quick Start

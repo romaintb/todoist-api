@@ -53,8 +53,8 @@ pub struct Project {
     #[serde(alias = "shared")]
     pub is_shared: bool,
     pub is_favorite: bool,
-    /// Whether this is the inbox project
-    #[serde(alias = "is_inbox_project")]
+    /// Whether this is the inbox project (API only sends this when true)
+    #[serde(alias = "is_inbox_project", default)]
     pub inbox_project: bool,
     pub view_style: String,
     pub parent_id: Option<String>,

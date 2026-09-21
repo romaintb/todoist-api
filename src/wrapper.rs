@@ -391,6 +391,13 @@ impl TodoistWrapper {
         self.make_post_request(&format!("/tasks/{task_id}/reopen"), None).await
     }
 
+    /// Move a task to another project
+    pub async fn move_task(&self, task_id: &str, project_id: &str) -> TodoistResult<Task> {
+        let body_value = serde_json::json!({ "project_id": project_id });
+        self.make_post_request(&format!("/tasks/{task_id}/move"), Some(&body_value))
+            .await
+    }
+
     /// Delete a task
     pub async fn delete_task(&self, task_id: &str) -> TodoistResult<()> {
         self.make_delete_request(&format!("/tasks/{task_id}")).await

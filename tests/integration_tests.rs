@@ -1,7 +1,7 @@
 use serde_json::json;
 use todoist_api::*;
 use wiremock::{
-    matchers::{method, path, query_param},
+    matchers::{body_json, method, path, query_param},
     Mock, MockServer, ResponseTemplate,
 };
 
@@ -435,6 +435,45 @@ async fn test_update_task() {
     let task = result.unwrap();
     assert_eq!(task.content, "Updated Task");
     assert_eq!(task.priority, 4);
+}
+
+#[tokio::test]
+async fn test_move_task() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/tasks/task_123/move"))
+        .and(body_json(json!({ "project_id": "proj_2" })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "task_123",
+            "user_id": "user_1",
+            "content": "Moved Task",
+            "description": "",
+            "project_id": "proj_2",
+            "section_id": null,
+            "parent_id": null,
+            "added_by_uid": null,
+            "assigned_by_uid": null,
+            "responsible_uid": null,
+            "labels": [],
+            "deadline": null,
+            "duration": null,
+            "added_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "due": null,
+            "priority": 1,
+            "child_order": 0,
+            "note_count": 0,
+            "day_order": 0,
+            "is_collapsed": false
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let todoist = TodoistWrapper::with_base_url("test-token".to_string(), mock_server.uri());
+
+    let task = todoist.move_task("task_123", "proj_2").await.unwrap();
+    assert_eq!(task.project_id, "proj_2");
 }
 
 #[tokio::test]
